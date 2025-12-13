@@ -11,4 +11,3 @@ The J-Dep Analyzer is a tool designed to analyze Java project dependencies. It a
 - **CLI Interface**: A command-line interface built with Typer for easy interaction.
 - **Error Handling**: Robust error handling with custom exceptions and user-friendly messages.
 - **Testing**: Comprehensive test suite using pytest with mock data for various scenarios.
-
