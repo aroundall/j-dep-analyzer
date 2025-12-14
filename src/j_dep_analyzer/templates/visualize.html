@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="bg-white border rounded p-4">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+    <div>
+      <div class="text-sm text-slate-500">Root</div>
+      <div class="font-mono text-sm">{{ root_id }}</div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-4">
+      <label class="flex items-center gap-2 text-sm">
+        <input id="show-group" type="checkbox" class="accent-slate-900" checked />
+        <span>Show Group</span>
+      </label>
+
+      <label class="flex items-center gap-2 text-sm">
+        <input id="show-version" type="checkbox" class="accent-slate-900" checked />
+        <span>Show Version</span>
+      </label>
+
+      <label class="text-sm">
+        <span class="mr-2">Direction</span>
+        <select id="direction" class="border rounded px-2 py-1 text-sm">
+          <option value="forward" selected>Forward</option>
+          <option value="reverse">Reverse</option>
+        </select>
+      </label>
+
+      <label class="text-sm">
+        <span class="mr-2">Depth</span>
+        <select id="depth" class="border rounded px-2 py-1 text-sm">
+          <option value="">All</option>
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+        </select>
+      </label>
+
+      <label class="text-sm">
+        <span class="mr-2">Layout</span>
+        <select id="layout" class="border rounded px-2 py-1 text-sm">
+          <option value="dagre" selected>dagre</option>
+          <option value="cose">cose</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div id="cy" class="w-full" style="height: 720px;"></div>
+  <div id="meta" class="mt-2 text-xs text-slate-500"></div>
+  <div class="mt-2 text-xs text-slate-500">DB: {{ db_path }}</div>
+</section>
+
+<script>
+  cytoscape.use(cytoscapeDagre);
+
+  const ROOT_ID = {{ root_id | tojson }};
+
+  const cy = cytoscape({
+    container: document.getElementById("cy"),
+    elements: [],
+    style: [
+      { selector: "node", style: {
+        "label": "data(label)",
+        "background-color": "#94a3b8",
+        "color": "#0f172a",
+        "text-valign": "center",
+        "text-halign": "center",
+        "font-size": "10px",
+        "width": 18,
+        "height": 18,
+      }},
+      { selector: "node.aggregated", style: {
+        "shape": "round-rectangle",
+        "width": 28,
+        "height": 18,
+        "background-color": "#cbd5e1",
+      }},
+      { selector: "node.root", style: { "background-color": "#ef4444" } },
+      { selector: "node.highlight", style: { "background-color": "#3b82f6" } },
+      { selector: "edge", style: {
+        "curve-style": "bezier",
+        "target-arrow-shape": "triangle",
+        "target-arrow-color": "#94a3b8",
+        "line-color": "#cbd5e1",
+        "width": 1,
+        "label": "data(scope)",
+        "font-size": "8px",
+        "text-rotation": "autorotate",
+        "color": "#64748b"
+      }},
+    ],
+  });
+
+  function buildParams() {
+    const showGroup = document.getElementById("show-group").checked;
+    const showVersion = document.getElementById("show-version").checked;
+    const direction = document.getElementById("direction").value;
+    const depthVal = document.getElementById("depth").value;
+
+    const p = new URLSearchParams();
+    p.set("root_id", ROOT_ID);
+    p.set("show_group", String(showGroup));
+    p.set("show_version", String(showVersion));
+    p.set("direction", direction);
+    if (depthVal) p.set("depth", depthVal);
+    return p.toString();
+  }
+
+  function runLayout() {
+    const layoutName = document.getElementById("layout").value;
+    if (layoutName === "dagre") {
+      cy.layout({ name: "dagre", rankDir: "LR", nodeSep: 30, edgeSep: 10, rankSep: 60 }).run();
+      return;
+    }
+    cy.layout({ name: "cose", animate: false }).run();
+  }
+
+  async function reloadGraph() {
+    const res = await fetch(`/api/graph/data?${buildParams()}`);
+    const payload = await res.json();
+
+    cy.elements().remove();
+    cy.add(payload.elements);
+    runLayout();
+
+    document.getElementById("meta").textContent =
+      `nodes=${payload.meta.node_count}, edges=${payload.meta.edge_count}, direction=${payload.meta.direction}, depth=${payload.meta.depth ?? "All"}`;
+  }
+
+  document.getElementById("show-group").addEventListener("change", reloadGraph);
+  document.getElementById("show-version").addEventListener("change", reloadGraph);
+  document.getElementById("direction").addEventListener("change", reloadGraph);
+  document.getElementById("depth").addEventListener("change", reloadGraph);
+  document.getElementById("layout").addEventListener("change", runLayout);
+
+  reloadGraph();
+</script>
+{% endblock %}

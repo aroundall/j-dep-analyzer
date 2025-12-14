@@ -1,0 +1,20 @@
+<table class="w-full text-sm border rounded overflow-hidden">
+  <thead class="bg-slate-100 text-slate-700">
+    <tr>
+      <th class="text-left p-2 border-b">GAV</th>
+      <th class="text-left p-2 border-b">Group</th>
+      <th class="text-left p-2 border-b">Artifact</th>
+      <th class="text-left p-2 border-b">Version</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for a in artifacts %}
+    <tr class="hover:bg-slate-50 cursor-pointer" onclick="window.location.href='/details/{{ a.gav }}'">
+      <td class="p-2 border-b font-mono text-xs">{{ a.gav }}</td>
+      <td class="p-2 border-b">{{ a.group_id }}</td>
+      <td class="p-2 border-b">{{ a.artifact_id }}</td>
+      <td class="p-2 border-b">{{ a.version }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

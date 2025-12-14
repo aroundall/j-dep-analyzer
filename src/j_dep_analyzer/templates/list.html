@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="bg-white border rounded p-4">
+  <h2 class="font-semibold mb-3">Artifacts</h2>
+
+  <div class="flex items-center gap-3 mb-3">
+    <input
+      class="border rounded px-3 py-2 w-full text-sm"
+      type="text"
+      name="q"
+      placeholder="Filter by artifactId..."
+      hx-get="/partials/artifacts-table"
+      hx-trigger="keyup changed delay:300ms"
+      hx-target="#artifact-table"
+      hx-include="[name='q']"
+    />
+  </div>
+
+  <div
+    id="artifact-table"
+    hx-get="/partials/artifacts-table"
+    hx-trigger="load"
+    hx-swap="innerHTML"
+  ></div>
+
+  <div class="mt-2 text-xs text-slate-500">DB: {{ db_path }}</div>
+</section>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="bg-white border rounded p-4">
+  <h2 class="font-semibold mb-3">Dependencies (Pair List)</h2>
+
+  <div class="flex flex-wrap items-center gap-3 mb-3">
+    <input
+      class="border rounded px-3 py-2 w-full md:w-96 text-sm"
+      type="text"
+      name="q"
+      placeholder="Filter by ArtifactId..."
+      hx-get="/partials/dependencies-table"
+      hx-trigger="keyup changed delay:300ms"
+      hx-target="#dep-table"
+      hx-include="[name='q'],[name='ignore_version'],[name='ignore_group']"
+    />
+
+    <label class="flex items-center gap-2 text-sm">
+      <input
+        type="checkbox"
+        name="ignore_version"
+        class="accent-slate-900"
+        hx-get="/partials/dependencies-table"
+        hx-trigger="change"
+        hx-target="#dep-table"
+        hx-include="[name='q'],[name='ignore_version'],[name='ignore_group']"
+      />
+      <span>Ignore Version</span>
+    </label>
+
+    <label class="flex items-center gap-2 text-sm">
+      <input
+        type="checkbox"
+        name="ignore_group"
+        class="accent-slate-900"
+        hx-get="/partials/dependencies-table"
+        hx-trigger="change"
+        hx-target="#dep-table"
+        hx-include="[name='q'],[name='ignore_version'],[name='ignore_group']"
+      />
+      <span>Ignore GroupId</span>
+    </label>
+  </div>
+
+  <div
+    id="dep-table"
+    hx-get="/partials/dependencies-table"
+    hx-trigger="load"
+    hx-include="[name='q'],[name='ignore_version'],[name='ignore_group']"
+    hx-swap="innerHTML"
+  ></div>
+
+  <div class="mt-2 text-xs text-slate-500">DB: {{ db_path }}</div>
+</section>
+{% endblock %}

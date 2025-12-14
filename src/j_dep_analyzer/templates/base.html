@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{{ title or "J-Dep Analyzer" }}</title>
+
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+    <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
+    <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+  </head>
+
+  <body class="bg-slate-50 text-slate-900">
+    <header class="border-b bg-white">
+      <div class="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
+        <a href="/" class="font-semibold">J-Dep Analyzer</a>
+        <nav class="text-sm text-slate-600 flex gap-4">
+          <a class="hover:text-slate-900" href="/">Dashboard</a>
+          <a class="hover:text-slate-900" href="/list">List</a>
+          <a class="hover:text-slate-900" href="/dependencies/list">Dependencies</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-4 py-6">
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>
