@@ -43,10 +43,23 @@ def _startup() -> None:
 
 
 def _engine():
+    """Create a SQLModel engine for the configured SQLite DB.
+
+    Newcomer note:
+        We intentionally create a new engine on demand rather than keeping a global
+        one. For a small demo app this is fine and keeps startup simple.
+    """
     return create_sqlite_engine(DB_PATH)
 
 
 def _load_atomic_graph(session: Session) -> nx.DiGraph:
+    """Load the *atomic* dependency graph from the database.
+
+    Atomic graph means: every node is a full `group:artifact:version` (GAV).
+
+    Edge direction follows Maven dependency semantics:
+        A -> B means "A depends on B".
+    """
     g = nx.DiGraph()
 
     for a in session.exec(select(Artifact)).all():
@@ -62,6 +75,10 @@ def _load_atomic_graph(session: Session) -> nx.DiGraph:
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request) -> Any:
+    """Dashboard page.
+
+    It contains an upload widget and a global dependency graph.
+    """
     return templates.TemplateResponse(
         "index.html",
         {
@@ -90,6 +107,11 @@ def list_page(request: Request) -> Any:
 
 @app.get("/visualize/{root_id}", response_class=HTMLResponse)
 def visualize(request: Request, root_id: str) -> Any:
+    """Detail page centered on a selected artifact (root_id).
+
+    root_id is a string key we use everywhere; usually it is a full GAV.
+    We also pre-split it for the left "info card".
+    """
     g, a, v = _split_gav(root_id)
     return templates.TemplateResponse(
         "visualize.html",
@@ -140,6 +162,11 @@ def artifacts_table_partial(request: Request, q: str | None = None, limit: int =
 
 
 def _split_gav(gav: str) -> tuple[str, str, str]:
+    """Split a GAV string into (group, artifact, version).
+
+    Maven coordinates are typically 3-part, but in this app we defensively handle
+    partial strings to keep the UI resilient.
+    """
     parts = (gav or "").split(":")
     if len(parts) >= 3:
         return parts[0] or "Unknown", parts[1] or "Unknown", parts[2] or "Unknown"
@@ -157,6 +184,14 @@ def _display_key(
     ignore_group: bool,
     ignore_version: bool,
 ) -> tuple[str, str, str, str]:
+    """Build an aggregation/display key for the dependencies table.
+
+    This is used by the "Dependencies (Pair List)" view to optionally *merge*
+    rows when the user ticks "Ignore Version" and/or "Ignore GroupId".
+    The returned tuple contains:
+      - key: internal dedup key (string)
+      - group_disp / artifact_disp / version_disp: what to display in the table
+    """
     if artifact is not None:
         g, a, v = artifact.group_id or "Unknown", artifact.artifact_id, artifact.version or "Unknown"
     else:
@@ -184,6 +219,12 @@ def _dependency_rows(
     ignore_group: bool,
     limit: int,
 ) -> list[dict[str, Any]]:
+    """Compute the dependencies list rows, optionally aggregated.
+
+    Why a helper?
+        Both the table partial and the CSV export should produce exactly the same
+        rows for the same query parameters.
+    """
     q_norm = (q or "").strip().lower()
 
     with Session(_engine()) as session:
@@ -458,6 +499,23 @@ def api_graph_data(
     aggregate_group: bool | None = None,
     aggregate_version: bool | None = None,
 ) -> dict[str, Any]:
+    """Return dependency graph data in Cytoscape.js `elements` format.
+
+    Data flow (high level):
+        1) Load atomic graph from DB (nodes are full GAV)
+        2) Aggregate nodes based on show_group/show_version
+        3) Optionally cut to a BFS neighborhood (root + depth)
+        4) Convert to Cytoscape elements and return JSON
+
+    Parameters:
+        - root_id: optional, focus on a node
+        - direction: forward (A -> B) or reverse (who depends on B)
+        - depth: optional BFS depth; None means "All"
+        - show_group/show_version: how node IDs are aggregated and how labels render
+
+    Compatibility:
+        DESIGN.md uses aggregate_group/aggregate_version with inverted meaning.
+    """
     # Back-compat with design doc param naming.
     if aggregate_group is not None:
         show_group = not aggregate_group
@@ -474,6 +532,7 @@ def api_graph_data(
         root_key = aggregated_node_id(root_id, show_group=show_group, show_version=show_version)
 
     if root_key and g.has_node(root_key):
+        # Reduce payload size: only return a neighborhood when a root is selected.
         keep = nodes_within_depth(g, root_key, direction=direction, depth=depth)
         g = g.subgraph(keep).copy()
 

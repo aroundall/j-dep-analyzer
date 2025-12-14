@@ -41,7 +41,18 @@ def _split_gav(gav: str) -> tuple[str, str, str]:
 
 
 def aggregated_node_id(gav: str, *, show_group: bool, show_version: bool) -> str:
-    """Map an atomic `group:artifact:version` id to an aggregated node id."""
+    """Map an atomic `group:artifact:version` id to an aggregated node id.
+
+    This is the *core* of node aggregation:
+        - show_group=True,  show_version=True  => group:artifact:version (no aggregation)
+        - show_group=True,  show_version=False => group:artifact          (merge versions)
+        - show_group=False, show_version=True  => artifact:version        (merge groups)
+        - show_group=False, show_version=False => artifact                (merge both)
+
+    Newcomer note:
+        The returned string becomes the node ID used by Cytoscape.js.
+        If two atomic nodes map to the same ID, they become one merged node.
+    """
     group_id, artifact_id, version = _split_gav(gav)
     if show_group and show_version:
         return f"{group_id}:{artifact_id}:{version}"
@@ -53,7 +64,16 @@ def aggregated_node_id(gav: str, *, show_group: bool, show_version: bool) -> str
 
 
 def aggregate_graph(g: nx.DiGraph, *, show_group: bool, show_version: bool) -> nx.DiGraph:
-    """Aggregate nodes by toggles; merge edges while preserving scope metadata."""
+    """Aggregate nodes by toggles; merge edges while preserving scope metadata.
+
+    What "aggregate" means here:
+        We build a *new* graph where multiple original nodes can collapse into one.
+        Edges are re-wired to the merged node IDs.
+
+    Metadata handling:
+        - Node: `merged_count` counts how many atomic nodes ended up in this node.
+        - Edge: when multiple edges collapse, scopes are combined into a comma list.
+    """
     out = nx.DiGraph()
 
     def ensure_node(node_id: str) -> None:
@@ -73,6 +93,7 @@ def aggregate_graph(g: nx.DiGraph, *, show_group: bool, show_version: bool) -> n
     for node_id in g.nodes:
         new_id = aggregated_node_id(str(node_id), show_group=show_group, show_version=show_version)
         ensure_node(new_id)
+        # How many original nodes were merged into this aggregated node.
         out.nodes[new_id]["merged_count"] += 1
 
     for u, v, data in g.edges(data=True):
@@ -85,6 +106,7 @@ def aggregate_graph(g: nx.DiGraph, *, show_group: bool, show_version: bool) -> n
         optional = (data or {}).get("optional")
 
         if out.has_edge(uu, vv):
+            # Merge edge metadata for collapsed edges (same uu -> vv after aggregation).
             scopes = out.edges[uu, vv].get("_scopes", set())
             scopes.add(scope)
             out.edges[uu, vv]["_scopes"] = scopes
@@ -113,6 +135,10 @@ def nodes_within_depth(
         - "reverse": traverse predecessors
     depth:
         - None means "All"
+
+    Newcomer note:
+      This is a standard BFS (breadth-first search). We use it to avoid returning
+      a huge graph when users only want "1 layer" or "2 layers" around a node.
     """
     if not root or not g.has_node(root):
         return set(g.nodes)
@@ -148,9 +174,20 @@ def graph_to_cytoscape_elements(
     direction: str = "forward",
     show_version: bool = True,
 ) -> list[dict[str, Any]]:
-    """Convert graph to Cytoscape.js `elements` format."""
+    """Convert graph to Cytoscape.js `elements` format.
+
+    Cytoscape expects a flat list like:
+        - { data: {id, label, ...}, classes: "..." } for nodes
+        - { data: {id, source, target, ...} } for edges
+
+    We also add CSS-like classes to nodes so the frontend can style:
+        - root: selected node
+        - highlight: in reverse view, nodes that depend on the root
+        - aggregated: version-hidden nodes
+    """
     highlight: set[str] = set()
     if root_id and g.has_node(root_id) and direction == "reverse":
+        # In reverse mode, highlight all ancestors (i.e. who depends on root).
         highlight = {str(n) for n in nx.ancestors(g, root_id)}
 
     elements: list[dict[str, Any]] = []
