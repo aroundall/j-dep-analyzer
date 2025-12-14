@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
   <section class="bg-white border rounded p-4 lg:col-span-1">
     <div class="text-sm text-slate-500">Selected</div>
     <div class="mt-1 font-mono text-sm break-all">{{ root_id }}</div>
@@ -14,7 +14,7 @@
     <div class="mt-4 text-xs text-slate-500">DB: {{ db_path }}</div>
   </section>
 
-  <section class="bg-white border rounded p-4 lg:col-span-2">
+  <section class="bg-white border rounded p-4 lg:col-span-3">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
       <div class="text-sm font-medium">Dependency View</div>
 
@@ -58,7 +58,9 @@
         <label class="text-sm">
           <span class="mr-2">Layout</span>
           <select id="layout" class="border rounded px-2 py-1 text-sm">
-            <option value="dagre" selected>dagre</option>
+            <option value="dagre">dagre</option>
+            <option value="circle">circle</option>
+            <option value="concentric" selected>concentric</option>
             <option value="cose">cose</option>
           </select>
         </label>
@@ -78,6 +80,9 @@
   const cy = cytoscape({
     container: document.getElementById("cy"),
     elements: [],
+    minZoom: 0.45,
+    maxZoom: 4.0,
+    wheelSensitivity: 0.12,
     style: [
       { selector: "node", style: {
         "label": "data(label)",
@@ -133,11 +138,60 @@
 
   function runLayout() {
     const layoutName = document.getElementById("layout").value;
+    let opts;
     if (layoutName === "dagre") {
-      cy.layout({ name: "dagre", rankDir: "LR", nodeSep: 30, edgeSep: 10, rankSep: 60 }).run();
-      return;
+      opts = { name: "dagre", rankDir: "LR", nodeSep: 30, edgeSep: 10, rankSep: 60, fit: false };
+    } else if (layoutName === "circle") {
+      opts = {
+        name: "circle",
+        fit: false,
+        padding: 90,
+        avoidOverlap: true,
+        nodeOverlap: 10,
+        spacingFactor: 1.8,
+      };
+    } else if (layoutName === "concentric") {
+      opts = {
+        name: "concentric",
+        fit: false,
+        padding: 90,
+        avoidOverlap: true,
+        nodeOverlap: 10,
+        spacingFactor: 1.6,
+        minNodeSpacing: 20,
+        levelWidth: () => 1,
+      };
+    } else {
+      opts = {
+        name: "cose",
+        animate: false,
+        randomize: true,
+        fit: false,
+        padding: 90,
+        numIter: 2000,
+        nodeRepulsion: 52000,
+        nodeOverlap: 10,
+        idealEdgeLength: 180,
+        edgeElasticity: 0.2,
+        gravity: 0.15,
+        componentSpacing: 200,
+      };
     }
-    cy.layout({ name: "cose", animate: false }).run();
+
+    const layout = cy.layout(opts);
+    layout.on('layoutstop', () => {
+      cy.fit(undefined, 70);
+
+      const z = cy.zoom();
+      const minZ = cy.minZoom();
+      const maxZ = cy.maxZoom();
+      const preferredMaxInitialZoom = Math.min(1.25, maxZ);
+
+      if (z < minZ) cy.zoom(minZ);
+      if (z > preferredMaxInitialZoom) cy.zoom(preferredMaxInitialZoom);
+      cy.center();
+    });
+    layout.run();
   }
 
   async function reloadGraph() {
@@ -154,7 +208,8 @@
 
   document.getElementById("show-group").addEventListener("change", reloadGraph);
   document.getElementById("show-version").addEventListener("change", reloadGraph);
-  document.getElementById("scope").addEventListener("change", reloadGraph);
+  const scopeEl = document.getElementById("scope");
+  scopeEl && scopeEl.addEventListener("change", reloadGraph);
   document.getElementById("direction").addEventListener("change", reloadGraph);
   document.getElementById("depth").addEventListener("change", reloadGraph);
   document.getElementById("layout").addEventListener("change", runLayout);

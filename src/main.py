@@ -145,6 +145,8 @@ def visualize(request: Request, root_id: str, scope: list[str] | None = Query(No
             "show_version": False,
             "scopes": scopes_sorted,
             "selected_scopes": selected_scopes,
+            # Wider canvas improves graph readability.
+            "wide": True,
             "db_path": str(DB_PATH),
         },
     )
