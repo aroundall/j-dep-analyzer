@@ -36,3 +36,7 @@ Thumbs.db
 
 # uv
 uv.lock
+
+# database files
+*.db
+*.sqlite

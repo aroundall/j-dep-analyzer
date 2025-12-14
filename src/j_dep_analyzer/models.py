@@ -5,22 +5,23 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 
+UNKNOWN_VERSION = "Unknown"
+
+
 class GAV(BaseModel):
     """Maven coordinates (GroupId, ArtifactId, Version)."""
 
     group_id: str = Field(..., min_length=1)
     artifact_id: str = Field(..., min_length=1)
-    version: str | None = None
+    version: str = Field(default=UNKNOWN_VERSION, min_length=1)
 
     def compact(self) -> str:
         """Return a compact string representation.
 
         Returns:
-            A string like `groupId:artifactId:version` (version omitted if missing).
+            A string like `groupId:artifactId:version`.
         """
-        if self.version:
-            return f"{self.group_id}:{self.artifact_id}:{self.version}"
-        return f"{self.group_id}:{self.artifact_id}"
+        return f"{self.group_id}:{self.artifact_id}:{self.version}"
 
 
 class Dependency(BaseModel):

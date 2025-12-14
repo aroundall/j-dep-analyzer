@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
+from typing import Mapping
 
 from lxml import etree
 
 from j_dep_analyzer.exceptions import PomModelError, PomNotFoundError, PomParseError
-from j_dep_analyzer.models import Dependency, GAV, MavenProject
+from j_dep_analyzer.models import Dependency, GAV, MavenProject, UNKNOWN_VERSION
+
+
+_PLACEHOLDER_RE = re.compile(r"\$\{([^}]+)\}")
 
 
 def _text_first(node: etree._Element, xpath_expr: str) -> str | None:
@@ -75,6 +80,44 @@ def _parse_xml(path: Path) -> etree._Element:
         raise PomParseError(f"Failed to parse pom.xml: {path}") from exc
 
 
+def _resolve_placeholders(value: str, props: Mapping[str, str]) -> str:
+    """Resolve ${...} placeholders using provided properties.
+
+    Unknown placeholders are preserved as-is.
+    """
+    current = value
+    for _ in range(5):
+        changed = False
+
+        def _sub(m: re.Match[str]) -> str:
+            nonlocal changed
+            key = m.group(1)
+            replacement = props.get(key)
+            if replacement:
+                changed = True
+                return replacement
+            return m.group(0)
+
+        nxt = _PLACEHOLDER_RE.sub(_sub, current)
+        current = nxt
+        if not changed:
+            break
+    return current
+
+
+def _parse_properties(root: etree._Element) -> dict[str, str]:
+    props: dict[str, str] = {}
+    nodes = root.xpath("/*[local-name()='project']/*[local-name()='properties']/*")
+    for n in nodes:
+        if not isinstance(n, etree._Element):
+            continue
+        key = etree.QName(n).localname
+        val = (n.text or "").strip()
+        if key and val:
+            props[key] = val
+    return props
+
+
 def parse_pom(path: str | Path) -> MavenProject:
     """Parse a Maven pom.xml and extract direct dependencies.
 
@@ -94,28 +137,49 @@ def parse_pom(path: str | Path) -> MavenProject:
     pom_path = Path(path)
     root = _parse_xml(pom_path)
 
-    group_id = _text_first(root, "/*[local-name()='project']/*[local-name()='groupId']")
-    artifact_id = _text_first(root, "/*[local-name()='project']/*[local-name()='artifactId']")
-    version = _text_first(root, "/*[local-name()='project']/*[local-name()='version']")
+    raw_group_id = _text_first(root, "/*[local-name()='project']/*[local-name()='groupId']")
+    raw_artifact_id = _text_first(root, "/*[local-name()='project']/*[local-name()='artifactId']")
+    raw_version = _text_first(root, "/*[local-name()='project']/*[local-name()='version']")
 
-    # Maven allows inheriting groupId/version from parent; keep minimal for now.
-    if group_id is None:
-        group_id = _text_first(
-            root,
-            "/*[local-name()='project']/*[local-name()='parent']/*[local-name()='groupId']",
-        )
-    if version is None:
-        version = _text_first(
-            root,
-            "/*[local-name()='project']/*[local-name()='parent']/*[local-name()='version']",
-        )
+    parent_group_id = _text_first(
+        root,
+        "/*[local-name()='project']/*[local-name()='parent']/*[local-name()='groupId']",
+    )
+    parent_version = _text_first(
+        root,
+        "/*[local-name()='project']/*[local-name()='parent']/*[local-name()='version']",
+    )
 
-    if artifact_id is None:
+    if raw_artifact_id is None:
         raise PomModelError("Missing required <artifactId> in pom.xml")
-    if group_id is None:
+
+    raw_group_id = raw_group_id or parent_group_id
+    raw_version = raw_version or parent_version
+
+    if raw_group_id is None:
         raise PomModelError("Missing required <groupId> (or parent <groupId>) in pom.xml")
 
-    project_gav = GAV(group_id=group_id, artifact_id=artifact_id, version=version)
+    props = _parse_properties(root)
+    effective_version = raw_version or UNKNOWN_VERSION
+    builtins: dict[str, str] = {
+        "project.groupId": raw_group_id,
+        "project.artifactId": raw_artifact_id,
+        "project.version": effective_version,
+        "pom.groupId": raw_group_id,
+        "pom.artifactId": raw_artifact_id,
+        "pom.version": effective_version,
+        "groupId": raw_group_id,
+        "artifactId": raw_artifact_id,
+        "version": effective_version,
+    }
+    merged_props = {**props, **builtins}
+
+    group_id = _resolve_placeholders(raw_group_id, merged_props)
+    version = _resolve_placeholders(effective_version, merged_props)
+    if not version:
+        version = UNKNOWN_VERSION
+
+    project_gav = GAV(group_id=group_id, artifact_id=raw_artifact_id, version=version)
 
     deps: list[Dependency] = []
     dep_nodes = root.xpath(
@@ -131,9 +195,13 @@ def parse_pom(path: str | Path) -> MavenProject:
         dep_scope = _text_first(dep, "./*[local-name()='scope']")
         dep_optional = _bool_text(_text_first(dep, "./*[local-name()='optional']"))
 
-        # Preserve ${...} placeholders as-is; future hook could resolve via <properties>.
         if dep_group_id is None or dep_artifact_id is None:
             continue
+
+        if dep_version is None:
+            dep_version = UNKNOWN_VERSION
+        else:
+            dep_version = _resolve_placeholders(dep_version, merged_props) or dep_version
 
         deps.append(
             Dependency(

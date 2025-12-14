@@ -1,40 +1,39 @@
-# Copilot Instructions for Maven Dependency Visualizer
+# Copilot Instructions for Maven Graph Analyzer
 
-## 1. 角色设定
-你是一位精通 DevOps 工具链开发的资深 Python 工程师。你的目标是构建一个健壮的 CLI 工具，用于解析 Java Maven 项目的 `pom.xml` 文件，并可视化其依赖树。
+## 1. 角色与目标
+你是一位精通 Python 和 Build Engineering 的资深专家。
+**目标**：构建一个 CLI 工具，解析多个 Maven `pom.xml` 文件，将其转化为**有向图 (Directed Graph)**，并提供依赖查询（特别是反向依赖）和可视化功能。
 
-## 2. Python 技术栈与规范
-- **Python 版本**：使用 Python 3.10+。
-- **包管理器 (重要)**：**必须使用 `uv`** 进行项目管理和依赖解析。
-- **配置文件**：使用符合 PEP 621 标准的 `pyproject.toml` 进行元数据配置。
-- **类型系统**：
-  - **强制**在所有函数签名中使用 Type Hints。
-  - 对于复杂的数据结构（如 Dependency, Artifact），**必须使用 Pydantic v2 (`BaseModel`)**。
-- **文档**：使用 Google Style Docstrings。
+## 2. 技术栈 (严格执行)
+- **包管理**：**必须使用 `uv`** (Astral) 进行依赖管理和脚本运行。
+- **核心语言**：Python 3.10+ (大量使用 Type Hints)。
+- **数据结构/图算法**：**`NetworkX`** (用于构建依赖图谱)。
+- **持久化/ORM**：**`SQLModel`** (结合 SQLAlchemy + Pydantic)。
+- **CLI 框架**：**`Typer`**。
+- **XML 解析**：**`lxml`** (必须处理 Namespaces)。
+- **可视化**：
+  - 终端：**`Rich`** (Tree view, Tables)。
+  - Web/HTML：**`Pyvis`** (Interactive Network Graph)。
 
-## 3. 核心库偏好
-- **XML 解析**：**必须使用 `lxml` 库**。
-- **CLI 交互**：使用 **`Typer`**。
-- **可视化输出**：使用 **`Rich`** 库。
+## 3. 代码规范
+- **类型系统**：所有函数必须有类型注解。复杂对象必须是 `SQLModel` 或 `Pydantic` 模型。
+- **路径处理**：使用 `pathlib.Path` 而不是 `os.path`。
+- **错误处理**：使用 `rich.console` 打印红色错误信息，严禁直接打印 Traceback 给最终用户。
 
-## 4. 领域特定指令 (Maven/POM)
-- **命名空间处理**：代码必须能自动忽略或正确处理 XML Namespace，确保 `find()` 方法稳健。
-- **数据模型**：抽象为 GAV (`GroupId`, `ArtifactId`, `Version`)。
-- **解析逻辑**：优先查找 `<dependencies>`。遇到 `${...}` 占位符需保留注释接口。
+## 4. 领域模型规则 (Maven & Graph)
+- **唯一标识 (ID)**：Artifact ID 格式统一为 `groupId:artifactId:version` (GAV)。
+- **图的方向**：
+  - **Node**: Artifact (Project 或 Library)。
+  - **Edge**: Dependency。
+  - **方向性**: 如果 A 依赖 B，边从 A 指向 B (`A -> B`)。
+  - **反向查询**: 查询“谁依赖了 B”，即寻找 B 的入度节点 (Predecessors)。
+- **XML 解析细节**：
+  - 必须容忍 XML Namespace。
+  - 必须能够提取 `<parent>` 标签中的版本号来补全子模块的缺失版本。
+  - 如果 `<version>` 标签缺失，但又根据parent或者properties无法推断出来，则标记version为“Unknown”。
 
-## 5. 测试策略
-- 使用 **`pytest`**。
-- 必须使用 Mock 数据（XML Fixtures）测试解析逻辑。
-
-## 6. 错误处理
-- 使用自定义异常类。
-- CLI 输出错误时使用 `rich.console` 打印红色提示。
-
-## 7. 开发工作流 (Development Workflow)
-> Copilot 请注意：生成终端命令或 Setup 脚本时，严格遵循 uv 的命令规范。
-
-- **初始化环境**：`uv venv`
-- **安装/同步依赖**：`uv sync` (不要使用 pip install -r ...)
-- **添加依赖**：`uv add lxml typer rich pydantic`
-- **运行脚本**：`uv run python main.py` 或 `uv run pytest`
-- **运行工具**：`uv run <entry-point>`
+## 5. 开发工作流指令
+> 当生成 setup 命令或运行指令时，请使用以下格式：
+- 初始化/添加依赖：`uv init`, `uv add networkx sqlmodel typer rich lxml pyvis`
+- 运行测试：`uv run pytest`
+- 运行应用：`uv run python -m src.main`
