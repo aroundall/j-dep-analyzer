@@ -17,7 +17,7 @@
     </thead>
     <tbody>
       {% for r in rows %}
-      <tr class="hover:bg-slate-50 cursor-pointer" onclick="window.location.href='/details/{{ r.details_id }}'">
+      <tr class="hover:bg-slate-50 cursor-pointer" onclick="window.location.href='/details/{{ r.details_id }}{% if scope and scope|length > 0 %}?{% for s in scope %}scope={{ s|urlencode }}{% if not loop.last %}&{% endif %}{% endfor %}{% endif %}'">
         <td class="p-2 border-b">{{ r.source_group }}</td>
         <td class="p-2 border-b">{{ r.source_artifact }}</td>
         <td class="p-2 border-b">{{ r.source_version }}</td>

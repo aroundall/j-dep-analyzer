@@ -30,6 +30,15 @@
         </label>
 
         <label class="text-sm">
+          <span class="mr-2">Scope</span>
+          <select id="scope" class="border rounded px-2 py-1 text-sm" multiple>
+            {% for s in scopes or [] %}
+              <option value="{{ s }}" {% if selected_scopes and (s in selected_scopes) %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label class="text-sm">
           <span class="mr-2">Direction</span>
           <select id="direction" class="border rounded px-2 py-1 text-sm">
             <option value="forward" selected>Forward</option>
@@ -105,6 +114,7 @@
   function buildParams() {
     const showGroup = document.getElementById("show-group").checked;
     const showVersion = document.getElementById("show-version").checked;
+    const scopeSel = document.getElementById("scope");
     const direction = document.getElementById("direction").value;
     const depthVal = document.getElementById("depth").value;
 
@@ -112,6 +122,10 @@
     p.set("root_id", ROOT_ID);
     p.set("show_group", String(showGroup));
     p.set("show_version", String(showVersion));
+    if (scopeSel) {
+      const selected = Array.from(scopeSel.selectedOptions || []).map(o => o.value).filter(Boolean);
+      for (const s of selected) p.append("scope", s);
+    }
     p.set("direction", direction);
     if (depthVal) p.set("depth", depthVal);
     return p.toString();
@@ -140,6 +154,7 @@
 
   document.getElementById("show-group").addEventListener("change", reloadGraph);
   document.getElementById("show-version").addEventListener("change", reloadGraph);
+  document.getElementById("scope").addEventListener("change", reloadGraph);
   document.getElementById("direction").addEventListener("change", reloadGraph);
   document.getElementById("depth").addEventListener("change", reloadGraph);
   document.getElementById("layout").addEventListener("change", runLayout);

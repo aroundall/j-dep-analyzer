@@ -52,7 +52,7 @@ def _engine():
     return create_sqlite_engine(DB_PATH)
 
 
-def _load_atomic_graph(session: Session) -> nx.DiGraph:
+def _load_atomic_graph(session: Session, *, scopes: set[str] | None = None) -> nx.DiGraph:
     """Load the *atomic* dependency graph from the database.
 
     Atomic graph means: every node is a full `group:artifact:version` (GAV).
@@ -65,10 +65,16 @@ def _load_atomic_graph(session: Session) -> nx.DiGraph:
     for a in session.exec(select(Artifact)).all():
         g.add_node(a.gav)
 
+    scopes_norm = {s.strip().lower() for s in (scopes or set()) if (s or "").strip()}
+
     for e in session.exec(select(DependencyEdge)).all():
+        scope_val = (e.scope or "compile").strip()
+        if scopes_norm and scope_val.lower() not in scopes_norm:
+            continue
+
         g.add_node(e.from_gav)
         g.add_node(e.to_gav)
-        g.add_edge(e.from_gav, e.to_gav, scope=e.scope, optional=e.optional)
+        g.add_edge(e.from_gav, e.to_gav, scope=scope_val, optional=e.optional)
 
     return g
 
@@ -106,13 +112,21 @@ def list_page(request: Request) -> Any:
 
 
 @app.get("/visualize/{root_id}", response_class=HTMLResponse)
-def visualize(request: Request, root_id: str) -> Any:
+def visualize(request: Request, root_id: str, scope: list[str] | None = Query(None)) -> Any:
     """Detail page centered on a selected artifact (root_id).
 
     root_id is a string key we use everywhere; usually it is a full GAV.
     We also pre-split it for the left "info card".
     """
     g, a, v = _split_gav(root_id)
+
+    with Session(_engine()) as session:
+        scopes = session.exec(select(DependencyEdge.scope).distinct()).all()
+    scope_set = {s or "compile" for s in scopes}
+    scopes_sorted = sorted(scope_set)
+
+    selected_scopes = scope or []
+
     return templates.TemplateResponse(
         "visualize.html",
         {
@@ -124,14 +138,17 @@ def visualize(request: Request, root_id: str) -> Any:
             # DESIGN.md (View C): defaults should NOT be checked.
             "show_group": False,
             "show_version": False,
+            "scopes": scopes_sorted,
+            "selected_scopes": selected_scopes,
             "db_path": str(DB_PATH),
         },
     )
 
 
 @app.get("/details/{root_id}", response_class=HTMLResponse)
-def details(request: Request, root_id: str) -> Any:
-    return visualize(request, root_id)
+def details(request: Request, root_id: str, scope: list[str] | None = Query(None)) -> Any:
+    # /details is a convenience alias to /visualize; make sure to forward query params.
+    return visualize(request, root_id, scope=scope)
 
 
 @app.get("/dependencies/list", response_class=HTMLResponse)
@@ -566,6 +583,7 @@ def api_graph_data(
     depth: int | None = Query(None, ge=1),
     show_group: bool = True,
     show_version: bool = True,
+    scope: list[str] | None = Query(None),
     aggregate_group: bool | None = None,
     aggregate_version: bool | None = None,
 ) -> dict[str, Any]:
@@ -593,7 +611,7 @@ def api_graph_data(
         show_version = not aggregate_version
 
     with Session(_engine()) as session:
-        atomic = _load_atomic_graph(session)
+        atomic = _load_atomic_graph(session, scopes=set(scope or []))
 
     g = aggregate_graph(atomic, show_group=show_group, show_version=show_version)
 
