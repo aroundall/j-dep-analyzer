@@ -90,6 +90,9 @@ def home(request: Request) -> Any:
         {
             "request": request,
             "db_path": str(DB_PATH),
+            # Default to unchecked (per latest DESIGN/UX request).
+            "show_group": False,
+            "show_version": False,
         },
     )
 
