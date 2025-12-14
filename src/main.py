@@ -93,6 +93,8 @@ def home(request: Request) -> Any:
             # Default to unchecked (per latest DESIGN/UX request).
             "show_group": False,
             "show_version": False,
+            # Dashboard wants a wider canvas for the global graph.
+            "wide": True,
         },
     )
 

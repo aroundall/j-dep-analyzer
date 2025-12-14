@@ -31,7 +31,7 @@
       </div>
     </header>
 
-    <main class="mx-auto max-w-6xl px-4 py-6">
+    <main class="mx-auto px-4 py-6 {{ 'max-w-[80vw]' if wide else 'max-w-6xl' }}">
       {% block content %}{% endblock %}
     </main>
   </body>
