@@ -443,86 +443,102 @@ async def upload_poms(request: Request, files: list[UploadFile] = File(...)) -> 
     ingested_edges = 0
     ingested_projects = 0
 
-    with tempfile.TemporaryDirectory() as td:
-        tmpdir = Path(td)
-        projects = []
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            tmpdir = Path(td)
+            projects = []
 
-        for f in files:
-            data = await f.read()
-            if not data:
-                continue
-            filename = Path(f.filename or "upload.pom").name
-            p = tmpdir / filename
-            p.write_bytes(data)
-            projects.append(parse_pom(p))
+            for f in files:
+                data = await f.read()
+                if not data:
+                    continue
+                filename = Path(f.filename or "upload.pom").name
+                p = tmpdir / filename
+                p.write_bytes(data)
+                projects.append(parse_pom(p))
 
-        with Session(_engine()) as session:
-            for proj in projects:
-                a = proj.project
-                a_gav = a.compact()
+            with Session(_engine()) as session:
+                for proj in projects:
+                    a = proj.project
+                    a_gav = a.compact()
 
-                if session.get(Artifact, a_gav) is None:
-                    session.add(
-                        Artifact(
-                            gav=a_gav,
-                            group_id=a.group_id,
-                            artifact_id=a.artifact_id,
-                            version=a.version,
-                        )
-                    )
-
-                for dep in proj.dependencies:
-                    b = dep.gav
-                    b_gav = b.compact()
-
-                    if session.get(Artifact, b_gav) is None:
+                    if session.get(Artifact, a_gav) is None:
                         session.add(
                             Artifact(
-                                gav=b_gav,
-                                group_id=b.group_id,
-                                artifact_id=b.artifact_id,
-                                version=b.version,
+                                gav=a_gav,
+                                group_id=a.group_id,
+                                artifact_id=a.artifact_id,
+                                version=a.version,
                             )
                         )
 
-                    scope = dep.scope or "compile"
-                    optional = dep.optional
+                    for dep in proj.dependencies:
+                        b = dep.gav
+                        b_gav = b.compact()
 
-                    exists = session.exec(
-                        select(DependencyEdge)
-                        .where(DependencyEdge.from_gav == a_gav)
-                        .where(DependencyEdge.to_gav == b_gav)
-                        .where(DependencyEdge.scope == scope)
-                        .where(DependencyEdge.optional == optional)
-                    ).first()
-
-                    if exists is None:
-                        session.add(
-                            DependencyEdge(
-                                from_gav=a_gav,
-                                to_gav=b_gav,
-                                scope=scope,
-                                optional=optional,
+                        if session.get(Artifact, b_gav) is None:
+                            session.add(
+                                Artifact(
+                                    gav=b_gav,
+                                    group_id=b.group_id,
+                                    artifact_id=b.artifact_id,
+                                    version=b.version,
+                                )
                             )
-                        )
-                        ingested_edges += 1
 
-                ingested_projects += 1
+                        scope = dep.scope or "compile"
+                        optional = dep.optional
 
-            session.commit()
+                        exists = session.exec(
+                            select(DependencyEdge)
+                            .where(DependencyEdge.from_gav == a_gav)
+                            .where(DependencyEdge.to_gav == b_gav)
+                            .where(DependencyEdge.scope == scope)
+                            .where(DependencyEdge.optional == optional)
+                        ).first()
 
-        parsed = len(projects)
+                        if exists is None:
+                            session.add(
+                                DependencyEdge(
+                                    from_gav=a_gav,
+                                    to_gav=b_gav,
+                                    scope=scope,
+                                    optional=optional,
+                                )
+                            )
+                            ingested_edges += 1
 
-    return templates.TemplateResponse(
-        "partials/upload_status.html",
-        {
-            "request": request,
-            "parsed": parsed,
-            "ingested_projects": ingested_projects,
-            "ingested_edges": ingested_edges,
-            "db_path": str(DB_PATH),
-        },
-    )
+                    ingested_projects += 1
+
+                session.commit()
+
+            parsed = len(projects)
+
+        return templates.TemplateResponse(
+            "partials/upload_status.html",
+            {
+                "request": request,
+                "ok": True,
+                "parsed": parsed,
+                "ingested_projects": ingested_projects,
+                "ingested_edges": ingested_edges,
+                "db_path": str(DB_PATH),
+            },
+        )
+    except Exception as exc:
+        return templates.TemplateResponse(
+            "partials/upload_status.html",
+            {
+                "request": request,
+                "ok": False,
+                "error": str(exc),
+                "parsed": parsed,
+                "ingested_projects": ingested_projects,
+                "ingested_edges": ingested_edges,
+                "db_path": str(DB_PATH),
+            },
+            status_code=400,
+        )
 
 
 @app.get("/api/artifacts", response_class=JSONResponse)
