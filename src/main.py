@@ -172,6 +172,7 @@ def dependencies_list(request: Request) -> Any:
             "request": request,
             "db_path": str(DB_PATH),
             "scopes": scopes_sorted,
+            "wide": True,
         },
     )
 
