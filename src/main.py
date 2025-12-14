@@ -7,7 +7,7 @@ from typing import Any
 
 import networkx as nx
 from fastapi import FastAPI, File, Query, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
@@ -71,6 +71,12 @@ def home(request: Request) -> Any:
     )
 
 
+@app.get("/graph/global", response_class=HTMLResponse)
+def graph_global(request: Request) -> Any:
+    # DESIGN.md calls this out as the global graph view. Keep it as an alias to the dashboard.
+    return home(request)
+
+
 @app.get("/list", response_class=HTMLResponse)
 def list_page(request: Request) -> Any:
     return templates.TemplateResponse(
@@ -84,11 +90,15 @@ def list_page(request: Request) -> Any:
 
 @app.get("/visualize/{root_id}", response_class=HTMLResponse)
 def visualize(request: Request, root_id: str) -> Any:
+    g, a, v = _split_gav(root_id)
     return templates.TemplateResponse(
         "visualize.html",
         {
             "request": request,
             "root_id": root_id,
+            "root_group": g,
+            "root_artifact": a,
+            "root_version": v,
             "db_path": str(DB_PATH),
         },
     )
@@ -167,15 +177,15 @@ def _display_key(
     return key, group_disp, a, version_disp
 
 
-@app.get("/partials/dependencies-table", response_class=HTMLResponse)
-def dependencies_table_partial(
-    request: Request,
-    q: str | None = None,
-    ignore_version: bool = False,
-    ignore_group: bool = False,
-    limit: int = 300,
-) -> Any:
+def _dependency_rows(
+    *,
+    q: str | None,
+    ignore_version: bool,
+    ignore_group: bool,
+    limit: int,
+) -> list[dict[str, Any]]:
     q_norm = (q or "").strip().lower()
+
     with Session(_engine()) as session:
         edges = session.exec(select(DependencyEdge).limit(2000)).all()
 
@@ -224,7 +234,8 @@ def dependencies_table_partial(
                     "target_artifact": ta,
                     "target_version": tv,
                     "scopes": set(),
-                    "details_id": e.to_gav,
+                    # DESIGN.md: click should go to Group 1 (source).
+                    "details_id": e.from_gav,
                 }
             agg[k]["scopes"].add(e.scope or "compile")
 
@@ -255,11 +266,23 @@ def dependencies_table_partial(
                     "target_artifact": ta,
                     "target_version": tv,
                     "scope": e.scope or "compile",
-                    "details_id": e.to_gav,
+                    # DESIGN.md: click should go to Group 1 (source).
+                    "details_id": e.from_gav,
                 }
             )
 
-    rows = rows[:limit]
+    return rows[:limit]
+
+
+@app.get("/partials/dependencies-table", response_class=HTMLResponse)
+def dependencies_table_partial(
+    request: Request,
+    q: str | None = None,
+    ignore_version: bool = False,
+    ignore_group: bool = False,
+    limit: int = 300,
+) -> Any:
+    rows = _dependency_rows(q=q, ignore_version=ignore_version, ignore_group=ignore_group, limit=limit)
 
     return templates.TemplateResponse(
         "partials/dependencies_table.html",
@@ -272,6 +295,51 @@ def dependencies_table_partial(
             "limit": limit,
         },
     )
+
+
+@app.get("/api/dependencies/export")
+def export_dependencies_csv(
+    q: str | None = None,
+    ignore_version: bool = False,
+    ignore_group: bool = False,
+    limit: int = 2000,
+) -> StreamingResponse:
+    rows = _dependency_rows(q=q, ignore_version=ignore_version, ignore_group=ignore_group, limit=limit)
+
+    def _iter() -> Any:
+        import csv
+        import io
+
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(
+            [
+                "source_group",
+                "source_artifact",
+                "source_version",
+                "target_group",
+                "target_artifact",
+                "target_version",
+                "scope",
+            ]
+        )
+        for r in rows:
+            writer.writerow(
+                [
+                    r.get("source_group", ""),
+                    r.get("source_artifact", ""),
+                    r.get("source_version", ""),
+                    r.get("target_group", ""),
+                    r.get("target_artifact", ""),
+                    r.get("target_version", ""),
+                    r.get("scope", ""),
+                ]
+            )
+
+        yield buf.getvalue()
+
+    headers = {"Content-Disposition": "attachment; filename=dependencies.csv"}
+    return StreamingResponse(_iter(), media_type="text/csv; charset=utf-8", headers=headers)
 
 
 @app.post("/api/upload", response_class=HTMLResponse)

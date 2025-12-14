@@ -6,15 +6,35 @@
 
     <form
       id="upload-form"
-      class="flex items-center gap-3"
+      class="flex flex-col gap-3"
       hx-post="/api/upload"
       hx-encoding="multipart/form-data"
       hx-target="#upload-status"
       hx-swap="innerHTML"
       hx-on:htmx:afterRequest="window.reloadGraph && window.reloadGraph()"
     >
-      <input class="block w-full text-sm" type="file" name="files" multiple />
-      <button class="px-3 py-2 rounded bg-slate-900 text-white text-sm" type="submit">Upload</button>
+      <div
+        id="dropzone"
+        class="relative w-full rounded border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-700"
+      >
+        <input
+          id="file-input"
+          class="absolute inset-0 h-full w-full opacity-0 cursor-pointer"
+          type="file"
+          name="files"
+          multiple
+        />
+        <div class="text-center">
+          <div class="font-medium">Drag & drop pom.xml file(s) here</div>
+          <div class="text-xs text-slate-500 mt-1">or click to select multiple files</div>
+          <div id="selected-files" class="text-xs text-slate-500 mt-2"></div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button class="px-3 py-2 rounded bg-slate-900 text-white text-sm" type="submit">Upload</button>
+        <div class="text-xs text-slate-500">Upload parses and upserts into SQLite.</div>
+      </div>
     </form>
 
     <div id="upload-status" class="mt-3 text-sm text-slate-700"></div>
@@ -145,5 +165,39 @@
   document.getElementById("layout").addEventListener("change", runLayout);
 
   window.reloadGraph();
+</script>
+
+<script>
+  (function() {
+    const dz = document.getElementById('dropzone');
+    const input = document.getElementById('file-input');
+    const list = document.getElementById('selected-files');
+    const form = document.getElementById('upload-form');
+
+    function renderSelected() {
+      if (!input.files || input.files.length === 0) {
+        list.textContent = '';
+        return;
+      }
+      const names = Array.from(input.files).map(f => f.name);
+      list.textContent = names.join(', ');
+    }
+
+    dz.addEventListener('dragover', (e) => {
+      e.preventDefault();
+    });
+
+    dz.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (e.dataTransfer && e.dataTransfer.files) {
+        input.files = e.dataTransfer.files;
+        renderSelected();
+        // Auto-submit on drop to match "dropzone" expectation.
+        form.requestSubmit();
+      }
+    });
+
+    input.addEventListener('change', renderSelected);
+  })();
 </script>
 {% endblock %}

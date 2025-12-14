@@ -65,9 +65,10 @@ class Dependency(SQLModel, table=True):
 - **Group 1 (Source)**: `G | A | V`
 - **Group 2 (Target)**: `G | A | V`
 - **交互**:
-  - 每一行是可点击的 (`<tr hx-get="/details/{id}" ...>`)。
+  - 每一行是可点击的 (`<tr hx-get="/details/{id in Group 1}" ...>`)。
   - 顶部提供 Filter 输入框 (Filter by ArtifactId)。
   - 提供 Checkbox: "Ignore Version", "Ignore GroupId"（勾选后，表格内容需去重聚合）。
+  - 提供 Export 按钮，导出当前视图为 CSV。
 
 ### 3.4 视图 C: 详细依赖透视 (`GET /details/{artifact_id}`)
 
