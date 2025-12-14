@@ -5,15 +5,20 @@ A web app to upload Maven `pom.xml` files, parse direct dependencies, store them
 ## Requirements
 
 - Python >= 3.10
-- `uv` installed
+- Either `uv` (recommended) or `pip`
 
-## Install
+Notes:
+
+- Python 3.11/3.12 is recommended for best wheel availability on all platforms.
+- Windows users: this repo uses a `src/` layout, so when starting with `uvicorn` you typically need `--app-dir src` (see below).
+
+## Install (uv)
 
 ```bash
 uv sync --extra dev
 ```
 
-## Run
+## Run (uv)
 
 ```bash
 uv run fastapi dev src/main.py
@@ -22,6 +27,64 @@ uv run fastapi dev src/main.py
 Then open:
 
 - <http://127.0.0.1:8000/>
+
+## Install (pip)
+
+This repo is a Python package (with a `src/` layout), so the simplest `pip` flow is to install it into a virtualenv.
+
+Linux/macOS:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -e ".[dev]"
+```
+
+Windows (PowerShell):
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -U pip
+pip install -e ".[dev]"
+```
+
+Windows (CMD):
+
+```bat
+py -m venv .venv
+.venv\Scripts\activate.bat
+python -m pip install -U pip
+pip install -e ".[dev]"
+```
+
+## Run (pip)
+
+Because of the `src/` layout, prefer `--app-dir src` so `j_dep_analyzer` imports correctly.
+
+Linux/macOS:
+
+```bash
+uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
+```
+
+Windows (PowerShell):
+
+```powershell
+uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
+```
+
+Windows (CMD):
+
+```bat
+uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
+```
+
+If you prefer keeping the original module path (`uvicorn src.main:app ...`), you must add `src/` to `PYTHONPATH`:
+
+- PowerShell: `$env:PYTHONPATH = "src"`
+- CMD: `set PYTHONPATH=src`
 
 ## Using the App
 
@@ -80,6 +143,20 @@ To change it:
 
 ```bash
 export JDEP_DB_PATH=/path/to/your/dependencies.db
+uv run fastapi dev src/main.py
+```
+
+Windows (PowerShell):
+
+```powershell
+$env:JDEP_DB_PATH = "C:\\path\\to\\dependencies.db"
+uv run fastapi dev src/main.py
+```
+
+Windows (CMD):
+
+```bat
+set JDEP_DB_PATH=C:\path\to\dependencies.db
 uv run fastapi dev src/main.py
 ```
 
