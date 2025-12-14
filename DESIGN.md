@@ -83,6 +83,7 @@ class Dependency(SQLModel, table=True):
   - **Forward Tree**: 它依赖了谁？(层级：1层, 2层, 或 All)。
   - **Reverse Tree**: 谁依赖了它？(Impact Analysis)。
 - **动态聚合**: 同样支持顶部的 "Hide Version" 开关。如果隐藏 Version，则显示聚合后的“通用组件”关系。
+  - 默认不要勾选 show Group 和 show Version。
 
 ## 4. API 接口设计 (FastAPI)
 

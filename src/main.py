@@ -121,6 +121,9 @@ def visualize(request: Request, root_id: str) -> Any:
             "root_group": g,
             "root_artifact": a,
             "root_version": v,
+            # DESIGN.md (View C): defaults should NOT be checked.
+            "show_group": False,
+            "show_version": False,
             "db_path": str(DB_PATH),
         },
     )

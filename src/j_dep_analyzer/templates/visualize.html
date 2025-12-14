@@ -20,12 +20,12 @@
 
       <div class="flex flex-wrap items-center gap-4">
         <label class="flex items-center gap-2 text-sm">
-          <input id="show-group" type="checkbox" class="accent-slate-900" checked />
+          <input id="show-group" type="checkbox" class="accent-slate-900" {% if show_group %}checked{% endif %} />
           <span>Show Group</span>
         </label>
 
         <label class="flex items-center gap-2 text-sm">
-          <input id="show-version" type="checkbox" class="accent-slate-900" checked />
+          <input id="show-version" type="checkbox" class="accent-slate-900" {% if show_version %}checked{% endif %} />
           <span>Show Version</span>
         </label>
 
