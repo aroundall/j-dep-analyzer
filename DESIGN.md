@@ -63,10 +63,13 @@ class Dependency(SQLModel, table=True):
 
 - **UI**: 双栏布局表格。
 - **Group 1 (Source)**: `G | A | V`
-- **Group 2 (Target)**: `G | A | V`
+- **Group 2 (Target)**: `G | A | V | Scope`
 - **交互**:
   - 每一行是可点击的 (`<tr hx-get="/details/{id in Group 1}" ...>`)。
-  - 顶部提供 Filter 输入框 (Filter by ArtifactId)。
+  - 顶部提供 Filters
+    - 输入框 (Filter by ArtifactId)。
+    - filter by Scope 下拉框 (multi-select)。
+    - filter by GroupId (free text, 支持模糊匹配)。
   - 提供 Checkbox: "Ignore Version", "Ignore GroupId"（勾选后，表格内容需去重聚合）。
   - 提供 Export 按钮，导出当前视图为 CSV。
 

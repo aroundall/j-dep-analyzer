@@ -133,11 +133,18 @@ def details(request: Request, root_id: str) -> Any:
 
 @app.get("/dependencies/list", response_class=HTMLResponse)
 def dependencies_list(request: Request) -> Any:
+    with Session(_engine()) as session:
+        scopes = session.exec(select(DependencyEdge.scope).distinct()).all()
+
+    scope_set = {s or "compile" for s in scopes}
+    scopes_sorted = sorted(scope_set)
+
     return templates.TemplateResponse(
         "dependencies_list.html",
         {
             "request": request,
             "db_path": str(DB_PATH),
+            "scopes": scopes_sorted,
         },
     )
 
@@ -215,6 +222,8 @@ def _display_key(
 def _dependency_rows(
     *,
     q: str | None,
+    group_q: str | None,
+    scopes: list[str] | None,
     ignore_version: bool,
     ignore_group: bool,
     limit: int,
@@ -226,6 +235,8 @@ def _dependency_rows(
         rows for the same query parameters.
     """
     q_norm = (q or "").strip().lower()
+    group_q_norm = (group_q or "").strip().lower()
+    scopes_norm = {s.strip().lower() for s in (scopes or []) if (s or "").strip()}
 
     with Session(_engine()) as session:
         edges = session.exec(select(DependencyEdge).limit(2000)).all()
@@ -245,8 +256,18 @@ def _dependency_rows(
     if ignore_group or ignore_version:
         agg: dict[tuple[str, str], dict[str, Any]] = {}
         for e in edges:
+            scope_val = (e.scope or "compile")
+            if scopes_norm and scope_val.strip().lower() not in scopes_norm:
+                continue
+
             src_art = artifacts_by_gav.get(e.from_gav)
             tgt_art = artifacts_by_gav.get(e.to_gav)
+
+            src_group_raw = (src_art.group_id if src_art is not None else _split_gav(e.from_gav)[0]) or "Unknown"
+            tgt_group_raw = (tgt_art.group_id if tgt_art is not None else _split_gav(e.to_gav)[0]) or "Unknown"
+            if group_q_norm:
+                if group_q_norm not in src_group_raw.lower() and group_q_norm not in tgt_group_raw.lower():
+                    continue
 
             src_key, sg, sa, sv = _display_key(
                 e.from_gav,
@@ -289,10 +310,20 @@ def _dependency_rows(
             )
     else:
         for e in edges:
+            scope_val = (e.scope or "compile")
+            if scopes_norm and scope_val.strip().lower() not in scopes_norm:
+                continue
+
             src_art = artifacts_by_gav.get(e.from_gav)
             tgt_art = artifacts_by_gav.get(e.to_gav)
             _, sg, sa, sv = _display_key(e.from_gav, src_art, ignore_group=False, ignore_version=False)
             _, tg, ta, tv = _display_key(e.to_gav, tgt_art, ignore_group=False, ignore_version=False)
+
+            src_group_raw = (src_art.group_id if src_art is not None else _split_gav(e.from_gav)[0]) or "Unknown"
+            tgt_group_raw = (tgt_art.group_id if tgt_art is not None else _split_gav(e.to_gav)[0]) or "Unknown"
+            if group_q_norm:
+                if group_q_norm not in src_group_raw.lower() and group_q_norm not in tgt_group_raw.lower():
+                    continue
 
             if q_norm:
                 if q_norm not in (sa or "").lower() and q_norm not in (ta or "").lower():
@@ -306,7 +337,7 @@ def _dependency_rows(
                     "target_group": tg,
                     "target_artifact": ta,
                     "target_version": tv,
-                    "scope": e.scope or "compile",
+                    "scope": scope_val,
                     # DESIGN.md: click should go to Group 1 (source).
                     "details_id": e.from_gav,
                 }
@@ -319,11 +350,20 @@ def _dependency_rows(
 def dependencies_table_partial(
     request: Request,
     q: str | None = None,
+    group_q: str | None = None,
+    scope: list[str] | None = Query(None),
     ignore_version: bool = False,
     ignore_group: bool = False,
     limit: int = 300,
 ) -> Any:
-    rows = _dependency_rows(q=q, ignore_version=ignore_version, ignore_group=ignore_group, limit=limit)
+    rows = _dependency_rows(
+        q=q,
+        group_q=group_q,
+        scopes=scope,
+        ignore_version=ignore_version,
+        ignore_group=ignore_group,
+        limit=limit,
+    )
 
     return templates.TemplateResponse(
         "partials/dependencies_table.html",
@@ -331,6 +371,8 @@ def dependencies_table_partial(
             "request": request,
             "rows": rows,
             "q": q or "",
+            "group_q": group_q or "",
+            "scope": scope or [],
             "ignore_version": ignore_version,
             "ignore_group": ignore_group,
             "limit": limit,
@@ -341,11 +383,20 @@ def dependencies_table_partial(
 @app.get("/api/dependencies/export")
 def export_dependencies_csv(
     q: str | None = None,
+    group_q: str | None = None,
+    scope: list[str] | None = Query(None),
     ignore_version: bool = False,
     ignore_group: bool = False,
     limit: int = 2000,
 ) -> StreamingResponse:
-    rows = _dependency_rows(q=q, ignore_version=ignore_version, ignore_group=ignore_group, limit=limit)
+    rows = _dependency_rows(
+        q=q,
+        group_q=group_q,
+        scopes=scope,
+        ignore_version=ignore_version,
+        ignore_group=ignore_group,
+        limit=limit,
+    )
 
     def _iter() -> Any:
         import csv
