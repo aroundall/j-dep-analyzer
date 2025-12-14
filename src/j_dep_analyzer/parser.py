@@ -105,6 +105,26 @@ def _resolve_placeholders(value: str, props: Mapping[str, str]) -> str:
     return current
 
 
+def _normalize_version(value: str | None, props: Mapping[str, str]) -> str:
+    """Resolve and normalize a Maven version string.
+
+    Rules:
+      - Missing version => "Unknown"
+      - If placeholders remain after resolution (e.g. "${x.y}"), treat as unresolved => "Unknown"
+    """
+    if value is None:
+        return UNKNOWN_VERSION
+
+    resolved = _resolve_placeholders(value, props).strip()
+    if not resolved:
+        return UNKNOWN_VERSION
+
+    if _PLACEHOLDER_RE.search(resolved):
+        return UNKNOWN_VERSION
+
+    return resolved
+
+
 def _parse_properties(root: etree._Element) -> dict[str, str]:
     props: dict[str, str] = {}
     nodes = root.xpath("/*[local-name()='project']/*[local-name()='properties']/*")
@@ -123,7 +143,8 @@ def parse_pom(path: str | Path) -> MavenProject:
 
     Notes:
         - Namespace handling: uses `local-name()` XPath so it works with or without XML namespaces.
-        - Property placeholders like `${...}` are preserved as-is (hook left for future resolution).
+                - Property placeholders like `${...}` are resolved when possible.
+                    If a version cannot be resolved, it is stored as "Unknown".
 
     Args:
         path: Path to a pom.xml.
@@ -175,9 +196,7 @@ def parse_pom(path: str | Path) -> MavenProject:
     merged_props = {**props, **builtins}
 
     group_id = _resolve_placeholders(raw_group_id, merged_props)
-    version = _resolve_placeholders(effective_version, merged_props)
-    if not version:
-        version = UNKNOWN_VERSION
+    version = _normalize_version(effective_version, merged_props)
 
     project_gav = GAV(group_id=group_id, artifact_id=raw_artifact_id, version=version)
 
@@ -198,10 +217,7 @@ def parse_pom(path: str | Path) -> MavenProject:
         if dep_group_id is None or dep_artifact_id is None:
             continue
 
-        if dep_version is None:
-            dep_version = UNKNOWN_VERSION
-        else:
-            dep_version = _resolve_placeholders(dep_version, merged_props) or dep_version
+        dep_version = _normalize_version(dep_version, merged_props)
 
         deps.append(
             Dependency(

@@ -93,7 +93,18 @@ def test_preserve_property_placeholders(tmp_path: Path) -> None:
     model = parse_pom(path)
 
     assert len(model.dependencies) == 1
-    assert model.dependencies[0].gav.version == "${lib.version}"
+    assert model.dependencies[0].gav.version == "Unknown"
+
+
+def test_unresolved_placeholders_in_real_pom_become_unknown() -> None:
+    pom_path = Path(__file__).parent / "data" / "sample-pom" / "jackson-databind-2.19.4.pom"
+    model = parse_pom(pom_path)
+
+    # This POM declares jackson-core and jackson-annotations versions as placeholders
+    # (${jackson.version.*}) without defining them in <properties>.
+    versions = {d.gav.artifact_id: d.gav.version for d in model.dependencies}
+    assert versions.get("jackson-core") == "Unknown"
+    assert versions.get("jackson-annotations") == "Unknown"
 
 
 def test_inherit_version_from_parent(tmp_path: Path) -> None:
