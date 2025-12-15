@@ -1,19 +1,15 @@
 [project]
 name = "j-dep-analyzer"
 version = "0.1.0"
-description = "Analyze Maven pom.xml dependencies and visualize them in the terminal."
-readme = "DESIGN.md"
+description = "Web app to upload Maven pom.xml files, parse dependencies, store them in SQLite, and visualize them via an interactive UI."
+readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "lxml>=5.0.0",
   "pydantic>=2.0.0",
-  "rich>=13.0.0",
-  "typer>=0.12.0",
   "networkx>=3.0",
   "sqlmodel>=0.0.16",
-  "pyvis>=0.3.2",
   "fastapi[standard]>=0.110.0",
-  "uvicorn>=0.27.0",
   "python-multipart>=0.0.9",
   "jinja2>=3.1.0",
 ]
@@ -26,9 +22,6 @@ build-backend = "hatchling.build"
 dev = [
   "pytest>=8.0.0",
 ]
-
-[project.scripts]
-jdep = "j_dep_analyzer.cli:app"
 
 [tool.uv]
 package = true

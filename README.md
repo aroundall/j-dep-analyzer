@@ -112,22 +112,16 @@ On `/` you can toggle:
 - **Depth**: limit graph to N hops (or All)
 - **Layout**: `dagre` or `cose`
 
-### 3) Browse artifacts
-
-- Go to `/list`
-- Filter by `artifactId`
-- Click any row to open details view for that artifact
-
-### 4) Dependencies pair list
+### 3) Dependencies pair list
 
 - Go to `/dependencies/list`
 - Filter by `artifactId` (matches source or target)
 - Use checkboxes:
   - **Ignore Version**: deduplicate pairs across versions
   - **Ignore GroupId**: deduplicate pairs across groupId
-- Click a row to open the target details view
+- Click a row to open the source details view
 
-### 5) Details view
+### 4) Details view
 
 - `/details/{gav}` (alias of `/visualize/{gav}`)
 - Shows a graph centered at the selected root
