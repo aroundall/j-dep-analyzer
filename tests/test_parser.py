@@ -126,6 +126,38 @@ def test_inherit_version_from_parent(tmp_path: Path) -> None:
     assert model.project.compact() == "com.acme:child:9.9.9"
 
 
+def test_parse_parent_as_dependency(tmp_path: Path) -> None:
+    pom = """<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<project xmlns=\"http://maven.apache.org/POM/4.0.0\">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.acme</groupId>
+    <artifactId>parent</artifactId>
+    <version>9.9.9</version>
+  </parent>
+
+  <groupId>com.acme.child</groupId>
+  <artifactId>child</artifactId>
+  <version>1.0.0</version>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>2.0.12</version>
+    </dependency>
+  </dependencies>
+</project>
+"""
+    path = _write(tmp_path, "pom.xml", pom)
+    model = parse_pom(path)
+
+    dep_keys = {(d.gav.compact(), d.scope) for d in model.dependencies}
+    assert ("com.acme:parent:9.9.9", "parent") in dep_keys
+    assert ("org.slf4j:slf4j-api:2.0.12", None) in dep_keys
+
+
 def test_resolve_properties_for_dependency_version(tmp_path: Path) -> None:
     pom = """<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <project>

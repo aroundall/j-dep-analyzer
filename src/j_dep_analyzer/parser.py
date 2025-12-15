@@ -166,6 +166,10 @@ def parse_pom(path: str | Path) -> MavenProject:
         root,
         "/*[local-name()='project']/*[local-name()='parent']/*[local-name()='groupId']",
     )
+    parent_artifact_id = _text_first(
+        root,
+        "/*[local-name()='project']/*[local-name()='parent']/*[local-name()='artifactId']",
+    )
     parent_version = _text_first(
         root,
         "/*[local-name()='project']/*[local-name()='parent']/*[local-name()='version']",
@@ -201,6 +205,21 @@ def parse_pom(path: str | Path) -> MavenProject:
     project_gav = GAV(group_id=group_id, artifact_id=raw_artifact_id, version=version)
 
     deps: list[Dependency] = []
+
+    # Treat `<parent>` as a dependency edge so it shows up in the graph.
+    # This is in addition to the standard Maven inheritance behavior above.
+    if parent_group_id and parent_artifact_id:
+        parent_group_resolved = _resolve_placeholders(parent_group_id, merged_props)
+        parent_artifact_resolved = _resolve_placeholders(parent_artifact_id, merged_props)
+        parent_version_norm = _normalize_version(parent_version, merged_props)
+        parent_gav = GAV(
+            group_id=parent_group_resolved,
+            artifact_id=parent_artifact_resolved,
+            version=parent_version_norm,
+        )
+        if parent_gav.compact() != project_gav.compact():
+            deps.append(Dependency(gav=parent_gav, scope="parent", optional=None))
+
     dep_nodes = root.xpath(
         "/*[local-name()='project']"
         "/*[local-name()='dependencies']"

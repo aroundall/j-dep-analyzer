@@ -45,6 +45,7 @@ class Dependency(SQLModel, table=True):
   - 接收 `List[UploadFile]`。
   - 使用 `lxml` 解析。
   - 遇到 `${...}` 无法解析时，Version 存为 "Unknown"。
+  - **Parent 处理**：除继承 `groupId/version` 作为当前项目坐标的补全逻辑外，还会将 `<parent>` 记录为一条依赖边（`scope="parent"`），即 `child -> parent`。
   - "Upsert" 逻辑：如果 GAV 已存在，忽略；否则插入 DB。
 
 ### 3.2 视图 A: 全局依赖概览 (`GET /graph/global`)
