@@ -89,6 +89,12 @@ class Dependency(SQLModel, table=True):
 - **动态聚合**: 同样支持顶部的 "Hide Version" 开关。如果隐藏 Version，则显示聚合后的“通用组件”关系。
   - 默认不要勾选 show Group 和 show Version。
 
+### 3.5 视图 D: 数据导出 (`GET /export`)
+
+- **功能**：为 DB 中的每个表提供一个导出为 CSV 的链接。
+- **下载**：`GET /export/{table}.csv`，直接下载对应表的原始数据（列名为 header）。
+- **说明**：用于调试/排查与数据备份；与视图 B 的“按筛选条件导出依赖对 CSV”互补。
+
 ## 4. API 接口设计 (FastAPI)
 
 - `POST /api/upload`: 上传 POMs。
@@ -98,6 +104,8 @@ class Dependency(SQLModel, table=True):
 - `GET /`: 主页 (Dashboard)。
 - `GET /list`: 列表页 HTML。
 - `GET /visualize/{id}`: 详情页 HTML。
+- `GET /export`: 导出页面 (HTML)。
+- `GET /export/{table}.csv`: 导出指定表为 CSV。
 
 ## 5. 前端展示逻辑 (Cytoscape.js Style)
 

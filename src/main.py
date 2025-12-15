@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import re
 from pathlib import Path
 from typing import Any
 
@@ -10,7 +11,9 @@ from fastapi import FastAPI, File, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import select as sa_select
 from sqlmodel import Session, select
+from sqlmodel import SQLModel
 
 from j_dep_analyzer.db import create_sqlite_engine, init_db
 from j_dep_analyzer.db_models import Artifact, DependencyEdge
@@ -175,6 +178,72 @@ def dependencies_list(request: Request) -> Any:
             "wide": True,
         },
     )
+
+
+def _exportable_table_names() -> list[str]:
+    # Derive table names from SQLModel metadata so this page stays in sync
+    # as new SQLModel tables are added.
+    return sorted(SQLModel.metadata.tables.keys())
+
+
+@app.get("/export", response_class=HTMLResponse)
+def export_page(request: Request) -> Any:
+    tables = [
+        {
+            "name": t,
+            "csv_href": f"/export/{t}.csv",
+        }
+        for t in _exportable_table_names()
+    ]
+
+    return templates.TemplateResponse(
+        "export.html",
+        {
+            "request": request,
+            "db_path": str(DB_PATH),
+            "tables": tables,
+        },
+    )
+
+
+_TABLE_NAME_RE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
+
+
+@app.get("/export/{table}.csv")
+def export_table_csv(table: str) -> StreamingResponse:
+    if not _TABLE_NAME_RE.match(table):
+        return JSONResponse({"error": "Invalid table name"}, status_code=400)
+
+    table_obj = SQLModel.metadata.tables.get(table)
+    if table_obj is None:
+        return JSONResponse({"error": "Table not found"}, status_code=404)
+
+    columns = list(table_obj.columns)
+    header = [c.name for c in columns]
+
+    def _iter() -> Any:
+        import csv
+        import io
+
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+
+        writer.writerow(header)
+        yield buf.getvalue()
+        buf.seek(0)
+        buf.truncate(0)
+
+        with Session(_engine()) as session:
+            result = session.connection().execute(sa_select(table_obj))
+            for row in result:
+                mapping = row._mapping
+                writer.writerow(["" if mapping.get(c) is None else mapping.get(c) for c in columns])
+                yield buf.getvalue()
+                buf.seek(0)
+                buf.truncate(0)
+
+    headers = {"Content-Disposition": f"attachment; filename={table}.csv"}
+    return StreamingResponse(_iter(), media_type="text/csv; charset=utf-8", headers=headers)
 
 
 @app.get("/partials/artifacts-table", response_class=HTMLResponse)
