@@ -38,3 +38,36 @@
 ## 5. 开发工作流
 - 启动命令：`uv run fastapi dev src/main.py`
 - 依赖添加：`uv add fastapi uvicorn python-multipart jinja2 sqlmodel networkx lxml`
+
+## 6. [UI/UX Design System] - VS Code "Quiet Light" Theme
+
+**核心原则**：所有生成的 HTML/CSS 必须模仿 VS Code 的 "Quiet Light" 主题风格。
+
+### 6.1. 配色方案 (Color Palette)
+使用 Tailwind CSS 类来实现以下视觉效果：
+- **背景 (Backgrounds)**:
+  - App Background: `#F3F3F3` (接近 VS Code 的 side bar 颜色).
+  - Content/Panel Background: `#FFFFFF` (纯白卡片).
+  - Hover Background: `#E8E8E8` (列表项悬停).
+- **文字 (Typography Colors)**:
+  - Primary Text: `#333333` (深灰，不要纯黑).
+  - Secondary/Meta Text: `#767676` (用于 Label 或不重要的信息).
+- **边框 (Borders)**: `#E5E5E5` (非常淡的分割线).
+- **强调色 (Accents)**:
+  - Primary Action (Button/Link): `#0090F1` (VS Code Blue).
+  - Success/Valid: `#098658` (VS Code Green).
+  - Keyword/Tag: `#800080` (VS Code Purple).
+
+### 6.2. 字体策略 (Typography)
+- **通用字体 (Body)**: 使用系统级无衬线字体栈，优先保证清晰度。
+  - `font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;`
+  - 如果可能，通过 CDN 引入 **Inter** 字体 (Google Fonts)。
+- **代码/GAV字体 (Monospace)**:
+  - 显示 GroupId, ArtifactId, Version 等数据时，**必须**使用等宽字体。
+  - `font-family: "Fira Code", "Consolas", "Monaco", monospace;`
+  - 稍微减小字号 (e.g., `text-sm`) 以便在表格中显示更多内容。
+
+### 6.3. 组件风格 (Component Styles)
+- **卡片 (Cards)**: 白色背景，无阴影或极浅的阴影 (`shadow-sm`)，1px 的实线边框 (`border-gray-200`)。
+- **按钮 (Buttons)**: 扁平化，直角或极小的圆角 (`rounded-sm`)，模仿 VS Code 的原生控件。
+- **表格 (Tables)**: 紧凑型 (`table-compact`)，行高较小，便于阅读大量数据。

@@ -1,36 +1,36 @@
 <div class="overflow-x-auto">
-  <table class="min-w-full text-sm border rounded overflow-hidden">
-    <thead class="bg-slate-100 text-slate-700">
+  <table class="min-w-full text-sm border rounded-sm overflow-hidden border-[#E5E5E5]">
+    <thead class="bg-white text-[#333333]">
       <tr>
-        <th class="text-left p-2 border-b" colspan="3">Source</th>
-        <th class="text-left p-2 border-b" colspan="4">Target</th>
+        <th class="text-left p-2 border-b border-[#E5E5E5]" colspan="3">Source</th>
+        <th class="text-left p-2 border-b border-[#E5E5E5]" colspan="4">Target</th>
       </tr>
-      <tr class="bg-slate-50 text-slate-600">
-        <th class="text-left p-2 border-b">G</th>
-        <th class="text-left p-2 border-b">A</th>
-        <th class="text-left p-2 border-b">V</th>
-        <th class="text-left p-2 border-b">G</th>
-        <th class="text-left p-2 border-b">A</th>
-        <th class="text-left p-2 border-b">V</th>
-        <th class="text-left p-2 border-b">Scope</th>
+      <tr class="bg-[#F3F3F3] text-[#767676]">
+        <th class="text-left p-2 border-b border-[#E5E5E5]">G</th>
+        <th class="text-left p-2 border-b border-[#E5E5E5]">A</th>
+        <th class="text-left p-2 border-b border-[#E5E5E5]">V</th>
+        <th class="text-left p-2 border-b border-[#E5E5E5]">G</th>
+        <th class="text-left p-2 border-b border-[#E5E5E5]">A</th>
+        <th class="text-left p-2 border-b border-[#E5E5E5]">V</th>
+        <th class="text-left p-2 border-b border-[#E5E5E5]">Scope</th>
       </tr>
     </thead>
     <tbody>
       {% for r in rows %}
-      <tr class="hover:bg-slate-50 cursor-pointer" onclick="window.location.href='/details/{{ r.details_id }}{% if scope and scope|length > 0 %}?{% for s in scope %}scope={{ s|urlencode }}{% if not loop.last %}&{% endif %}{% endfor %}{% endif %}'">
-        <td class="p-2 border-b">{{ r.source_group }}</td>
-        <td class="p-2 border-b">{{ r.source_artifact }}</td>
-        <td class="p-2 border-b">{{ r.source_version }}</td>
-        <td class="p-2 border-b">{{ r.target_group }}</td>
-        <td class="p-2 border-b">{{ r.target_artifact }}</td>
-        <td class="p-2 border-b">{{ r.target_version }}</td>
-        <td class="p-2 border-b text-slate-600">{{ r.scope }}</td>
+      <tr class="hover:bg-[#E8E8E8] cursor-pointer" onclick="window.location.href='/details/{{ r.details_id }}{% if scope and scope|length > 0 %}?{% for s in scope %}scope={{ s|urlencode }}{% if not loop.last %}&{% endif %}{% endfor %}{% endif %}'">
+        <td class="p-2 border-b border-[#E5E5E5] font-mono text-sm">{{ r.source_group }}</td>
+        <td class="p-2 border-b border-[#E5E5E5] font-mono text-sm">{{ r.source_artifact }}</td>
+        <td class="p-2 border-b border-[#E5E5E5] font-mono text-sm">{{ r.source_version }}</td>
+        <td class="p-2 border-b border-[#E5E5E5] font-mono text-sm">{{ r.target_group }}</td>
+        <td class="p-2 border-b border-[#E5E5E5] font-mono text-sm">{{ r.target_artifact }}</td>
+        <td class="p-2 border-b border-[#E5E5E5] font-mono text-sm">{{ r.target_version }}</td>
+        <td class="p-2 border-b border-[#E5E5E5] text-[#767676] font-mono text-sm">{{ r.scope }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 
   {% if not rows %}
-    <div class="mt-3 text-sm text-slate-600">No results.</div>
+    <div class="mt-3 text-sm text-[#767676]">No results.</div>
   {% endif %}
 </div>

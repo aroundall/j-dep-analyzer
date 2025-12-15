@@ -1,37 +1,37 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-  <section class="bg-white border rounded p-4 lg:col-span-1">
-    <div class="text-sm text-slate-500">Selected</div>
+  <section class="bg-white border rounded-sm p-4 shadow-sm border-[#E5E5E5] lg:col-span-1">
+    <div class="text-sm text-[#767676]">Selected</div>
     <div class="mt-1 font-mono text-sm break-all">{{ root_id }}</div>
 
     <div class="mt-4 text-sm">
-      <div class="flex justify-between gap-3"><span class="text-slate-500">Group</span><span class="font-mono">{{ root_group }}</span></div>
-      <div class="flex justify-between gap-3"><span class="text-slate-500">Artifact</span><span class="font-mono">{{ root_artifact }}</span></div>
-      <div class="flex justify-between gap-3"><span class="text-slate-500">Version</span><span class="font-mono">{{ root_version }}</span></div>
+      <div class="flex justify-between gap-3"><span class="text-[#767676]">Group</span><span class="font-mono text-sm">{{ root_group }}</span></div>
+      <div class="flex justify-between gap-3"><span class="text-[#767676]">Artifact</span><span class="font-mono text-sm">{{ root_artifact }}</span></div>
+      <div class="flex justify-between gap-3"><span class="text-[#767676]">Version</span><span class="font-mono text-sm">{{ root_version }}</span></div>
     </div>
 
-    <div class="mt-4 text-xs text-slate-500">DB: {{ db_path }}</div>
+    <div class="mt-4 text-xs text-[#767676]">DB: {{ db_path }}</div>
   </section>
 
-  <section class="bg-white border rounded p-4 lg:col-span-3">
+  <section class="bg-white border rounded-sm p-4 shadow-sm border-[#E5E5E5] lg:col-span-3">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
       <div class="text-sm font-medium">Dependency View</div>
 
       <div class="flex flex-wrap items-center gap-4">
         <label class="flex items-center gap-2 text-sm">
-          <input id="show-group" type="checkbox" class="accent-slate-900" {% if show_group %}checked{% endif %} />
+          <input id="show-group" type="checkbox" class="accent-[#0090F1]" {% if show_group %}checked{% endif %} />
           <span>Show Group</span>
         </label>
 
         <label class="flex items-center gap-2 text-sm">
-          <input id="show-version" type="checkbox" class="accent-slate-900" {% if show_version %}checked{% endif %} />
+          <input id="show-version" type="checkbox" class="accent-[#0090F1]" {% if show_version %}checked{% endif %} />
           <span>Show Version</span>
         </label>
 
         <label class="text-sm">
-          <span class="mr-2">Scope</span>
-          <select id="scope" class="border rounded px-2 py-1 text-sm" multiple>
+          <span class="mr-2 text-[#767676]">Scope</span>
+          <select id="scope" class="border rounded-sm px-2 py-1 text-sm bg-white border-[#E5E5E5]" multiple>
             {% for s in scopes or [] %}
               <option value="{{ s }}" {% if selected_scopes and (s in selected_scopes) %}selected{% endif %}>{{ s }}</option>
             {% endfor %}
@@ -39,16 +39,16 @@
         </label>
 
         <label class="text-sm">
-          <span class="mr-2">Direction</span>
-          <select id="direction" class="border rounded px-2 py-1 text-sm">
+          <span class="mr-2 text-[#767676]">Direction</span>
+          <select id="direction" class="border rounded-sm px-2 py-1 text-sm bg-white border-[#E5E5E5]">
             <option value="forward" selected>Forward</option>
             <option value="reverse">Reverse</option>
           </select>
         </label>
 
         <label class="text-sm">
-          <span class="mr-2">Depth</span>
-          <select id="depth" class="border rounded px-2 py-1 text-sm">
+          <span class="mr-2 text-[#767676]">Depth</span>
+          <select id="depth" class="border rounded-sm px-2 py-1 text-sm bg-white border-[#E5E5E5]">
             <option value="">All</option>
             <option value="1">1</option>
             <option value="2" selected>2</option>
@@ -56,8 +56,8 @@
         </label>
 
         <label class="text-sm">
-          <span class="mr-2">Layout</span>
-          <select id="layout" class="border rounded px-2 py-1 text-sm">
+          <span class="mr-2 text-[#767676]">Layout</span>
+          <select id="layout" class="border rounded-sm px-2 py-1 text-sm bg-white border-[#E5E5E5]">
             <option value="dagre">dagre</option>
             <option value="circle">circle</option>
             <option value="concentric" selected>concentric</option>
@@ -67,8 +67,8 @@
       </div>
     </div>
 
-    <div id="cy" class="w-full" style="height: 720px;"></div>
-    <div id="meta" class="mt-2 text-xs text-slate-500"></div>
+    <div id="cy" class="w-full border rounded-sm border-[#E5E5E5]" style="height: 720px;"></div>
+    <div id="meta" class="mt-2 text-xs text-[#767676]"></div>
   </section>
 </div>
 
@@ -86,8 +86,8 @@
     style: [
       { selector: "node", style: {
         "label": "data(label)",
-        "background-color": "#94a3b8",
-        "color": "#0f172a",
+        "background-color": "#BDBDBD",
+        "color": "#333333",
         "text-valign": "center",
         "text-halign": "center",
         "font-size": "10px",
@@ -98,20 +98,20 @@
         "shape": "round-rectangle",
         "width": 28,
         "height": 18,
-        "background-color": "#cbd5e1",
+        "background-color": "#D7D7D7",
       }},
-      { selector: "node.root", style: { "background-color": "#ef4444" } },
-      { selector: "node.highlight", style: { "background-color": "#3b82f6" } },
+      { selector: "node.root", style: { "background-color": "#0090F1" } },
+      { selector: "node.highlight", style: { "background-color": "#800080" } },
       { selector: "edge", style: {
         "curve-style": "bezier",
         "target-arrow-shape": "triangle",
-        "target-arrow-color": "#94a3b8",
-        "line-color": "#cbd5e1",
+        "target-arrow-color": "#BDBDBD",
+        "line-color": "#E5E5E5",
         "width": 1,
         "label": "data(scope)",
         "font-size": "8px",
         "text-rotation": "autorotate",
-        "color": "#64748b"
+        "color": "#767676"
       }},
     ],
   });

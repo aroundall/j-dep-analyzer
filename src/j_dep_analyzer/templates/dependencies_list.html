@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="bg-white border rounded p-4">
+<section class="bg-white border rounded-sm p-4 shadow-sm border-[#E5E5E5]">
   <h2 class="font-semibold mb-3">Dependencies (Pair List)</h2>
 
   <div class="flex flex-wrap items-center gap-3 mb-3">
     <input
       id="dep-q"
-      class="border rounded px-3 py-2 w-full md:w-96 text-sm"
+      class="border rounded-sm px-3 py-2 w-full md:w-96 text-sm bg-white border-[#E5E5E5]"
       type="text"
       name="q"
       placeholder="Filter by ArtifactId..."
@@ -18,7 +18,7 @@
 
     <input
       id="dep-group-q"
-      class="border rounded px-3 py-2 w-full md:w-80 text-sm"
+      class="border rounded-sm px-3 py-2 w-full md:w-80 text-sm bg-white border-[#E5E5E5]"
       type="text"
       name="group_q"
       placeholder="Filter by GroupId..."
@@ -32,7 +32,7 @@
       id="dep-scope"
       name="scope"
       multiple
-      class="border rounded px-3 py-2 text-sm bg-white w-full md:w-72"
+      class="border rounded-sm px-3 py-2 text-sm bg-white w-full md:w-72 border-[#E5E5E5]"
       hx-get="/partials/dependencies-table"
       hx-trigger="change"
       hx-target="#dep-table"
@@ -48,7 +48,7 @@
         id="dep-ignore-version"
         type="checkbox"
         name="ignore_version"
-        class="accent-slate-900"
+        class="accent-[#0090F1]"
         hx-get="/partials/dependencies-table"
         hx-trigger="change"
         hx-target="#dep-table"
@@ -62,7 +62,7 @@
         id="dep-ignore-group"
         type="checkbox"
         name="ignore_group"
-        class="accent-slate-900"
+        class="accent-[#0090F1]"
         hx-get="/partials/dependencies-table"
         hx-trigger="change"
         hx-target="#dep-table"
@@ -73,7 +73,7 @@
 
     <a
       id="export-csv"
-      class="px-3 py-2 rounded border text-sm bg-white hover:bg-slate-50"
+      class="px-3 py-2 text-sm ql-btn"
       href="/api/dependencies/export"
     >Export CSV</a>
   </div>
@@ -86,7 +86,7 @@
     hx-swap="innerHTML"
   ></div>
 
-  <div class="mt-2 text-xs text-slate-500">DB: {{ db_path }}</div>
+  <div class="mt-2 text-xs text-[#767676]">DB: {{ db_path }}</div>
 </section>
 
 <script>

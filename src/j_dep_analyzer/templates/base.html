@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>{{ title or "J-Dep Analyzer" }}</title>
 
+    <!-- Fonts (Quiet Light) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -13,20 +21,52 @@
     <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
 
     <style>
+      :root {
+        --ql-bg: #f3f3f3;
+        --ql-panel: #ffffff;
+        --ql-hover: #e8e8e8;
+        --ql-text: #333333;
+        --ql-meta: #767676;
+        --ql-border: #e5e5e5;
+        --ql-blue: #0090f1;
+        --ql-green: #098658;
+        --ql-purple: #800080;
+        --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --font-mono: "Fira Code", "Consolas", "Monaco", monospace;
+      }
+
+      body { font-family: var(--font-sans); }
+      .font-mono { font-family: var(--font-mono); }
+
       .htmx-indicator { display: none; }
       .htmx-request .htmx-indicator { display: inline-flex; }
       .htmx-request.htmx-indicator { display: inline-flex; }
+
+      /* Quiet Light flat controls */
+      .ql-btn {
+        border: 1px solid var(--ql-border);
+        background: var(--ql-panel);
+        color: var(--ql-text);
+        border-radius: 2px;
+      }
+      .ql-btn:hover { background: var(--ql-hover); }
+      .ql-btn-primary {
+        background: var(--ql-blue);
+        border-color: var(--ql-blue);
+        color: #ffffff;
+      }
+      .ql-btn-primary:hover { filter: brightness(0.96); }
     </style>
   </head>
 
-  <body class="bg-slate-50 text-slate-900">
-    <header class="border-b bg-white">
+  <body class="bg-[#F3F3F3] text-[#333333]">
+    <header class="border-b bg-white border-[#E5E5E5]">
       <div class="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
-        <a href="/" class="font-semibold">J-Dep Analyzer</a>
-        <nav class="text-sm text-slate-600 flex gap-4">
-          <a class="hover:text-slate-900" href="/">Dashboard</a>
-          <a class="hover:text-slate-900" href="/dependencies/list">Dependencies</a>
-          <a class="hover:text-slate-900" href="/export">Export</a>
+        <a href="/" class="font-semibold text-[#333333]">J-Dep Analyzer</a>
+        <nav class="text-sm text-[#767676] flex gap-4">
+          <a class="hover:text-[#333333]" href="/">Dashboard</a>
+          <a class="hover:text-[#333333]" href="/dependencies/list">Dependencies</a>
+          <a class="hover:text-[#333333]" href="/export">Export</a>
         </nav>
       </div>
     </header>
