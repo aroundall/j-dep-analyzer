@@ -108,17 +108,6 @@ def graph_global(request: Request) -> Any:
     return home(request)
 
 
-@app.get("/list", response_class=HTMLResponse)
-def list_page(request: Request) -> Any:
-    return templates.TemplateResponse(
-        "list.html",
-        {
-            "request": request,
-            "db_path": str(DB_PATH),
-        },
-    )
-
-
 @app.get("/visualize/{root_id}", response_class=HTMLResponse)
 def visualize(request: Request, root_id: str, scope: list[str] | None = Query(None)) -> Any:
     """Detail page centered on a selected artifact (root_id).

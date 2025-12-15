@@ -102,7 +102,6 @@ class Dependency(SQLModel, table=True):
 - `GET /api/graph/data`: 获取图数据 (JSON, Cytoscape format)。
   - **Params**: `root_id` (optional), `direction` (forward/reverse), `aggregate_version` (bool), `aggregate_group` (bool)。
 - `GET /`: 主页 (Dashboard)。
-- `GET /list`: 列表页 HTML。
 - `GET /visualize/{id}`: 详情页 HTML。
 - `GET /export`: 导出页面 (HTML)。
 - `GET /export/{table}.csv`: 导出指定表为 CSV。

@@ -24,11 +24,13 @@ def test_export_page_lists_tables() -> None:
 def test_export_table_csv_artifact_has_header_and_rows(tmp_path) -> None:
     # Insert one row via the app's DB engine.
     from sqlmodel import Session
+    from uuid import uuid4
 
     from j_dep_analyzer.db_models import Artifact
 
+    gav = f"test:{uuid4().hex}:1"
     with Session(main._engine()) as session:
-        session.add(Artifact(gav="g:a:1", group_id="g", artifact_id="a", version="1"))
+        session.add(Artifact(gav=gav, group_id="test", artifact_id="a", version="1"))
         session.commit()
 
     client = TestClient(main.app)
@@ -39,7 +41,7 @@ def test_export_table_csv_artifact_has_header_and_rows(tmp_path) -> None:
     reader = csv.reader(io.StringIO(res.text))
     rows = list(reader)
     assert rows[0] == ["gav", "group_id", "artifact_id", "version"]
-    assert ["g:a:1", "g", "a", "1"] in rows
+    assert [gav, "test", "a", "1"] in rows
 
 
 def test_export_table_csv_rejects_invalid_table_name() -> None:
