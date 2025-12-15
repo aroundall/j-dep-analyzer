@@ -312,7 +312,7 @@ def _dependency_rows(
     scopes: list[str] | None,
     ignore_version: bool,
     ignore_group: bool,
-    limit: int,
+    limit: int | None,
 ) -> list[dict[str, Any]]:
     """Compute the dependencies list rows, optionally aggregated.
 
@@ -325,7 +325,11 @@ def _dependency_rows(
     scopes_norm = {s.strip().lower() for s in (scopes or []) if (s or "").strip()}
 
     with Session(_engine()) as session:
-        edges = session.exec(select(DependencyEdge).limit(2000)).all()
+        # IMPORTANT: do not hard-limit edges here.
+        # The list view and CSV export are expected to reflect the full DB result
+        # set (subject only to the caller-provided `limit`). A previous hidden
+        # `.limit(2000)` caused silent truncation.
+        edges = session.exec(select(DependencyEdge)).all()
 
         gavs: set[str] = set()
         for e in edges:
@@ -429,7 +433,7 @@ def _dependency_rows(
                 }
             )
 
-    return rows[:limit]
+    return rows if limit is None else rows[:limit]
 
 
 @app.get("/partials/dependencies-table", response_class=HTMLResponse)
@@ -440,7 +444,7 @@ def dependencies_table_partial(
     scope: list[str] | None = Query(None),
     ignore_version: bool = False,
     ignore_group: bool = False,
-    limit: int = 300,
+    limit: int | None = Query(None, ge=1),
 ) -> Any:
     rows = _dependency_rows(
         q=q,
@@ -473,7 +477,7 @@ def export_dependencies_csv(
     scope: list[str] | None = Query(None),
     ignore_version: bool = False,
     ignore_group: bool = False,
-    limit: int = 2000,
+    limit: int | None = Query(None, ge=1),
 ) -> StreamingResponse:
     rows = _dependency_rows(
         q=q,

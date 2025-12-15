@@ -54,3 +54,48 @@ def test_export_table_csv_404_for_unknown_table() -> None:
     client = TestClient(main.app)
     res = client.get("/export/not_a_table.csv")
     assert res.status_code == 404
+
+
+def test_export_dependencies_csv_not_truncated_by_hidden_limit(tmp_path) -> None:
+    # Regression test: the dependencies export used to silently truncate because
+    # the backend limited edges to 2000 inside the row builder.
+    from sqlmodel import Session
+    from uuid import uuid4
+
+    from j_dep_analyzer.db import create_sqlite_engine, init_db
+    from j_dep_analyzer.db_models import Artifact, DependencyEdge
+
+    old_db_path = main.DB_PATH
+    try:
+        main.DB_PATH = tmp_path / "deps-test.db"
+        init_db(create_sqlite_engine(main.DB_PATH))
+
+        sink_gav = f"test:sink:{uuid4().hex}"
+        with Session(main._engine()) as session:
+            session.add(Artifact(gav=sink_gav, group_id="test", artifact_id="sink", version="1"))
+
+            edge_count = 2505
+            for i in range(edge_count):
+                src_gav = f"test:src{i}:{uuid4().hex}"
+                session.add(Artifact(gav=src_gav, group_id="test", artifact_id=f"src{i}", version="1"))
+                session.add(
+                    DependencyEdge(
+                        from_gav=src_gav,
+                        to_gav=sink_gav,
+                        scope="compile",
+                        optional=False,
+                    )
+                )
+
+            session.commit()
+
+        client = TestClient(main.app)
+        res = client.get("/api/dependencies/export")
+        assert res.status_code == 200
+        assert res.headers.get("content-type", "").startswith("text/csv")
+
+        lines = [ln for ln in res.text.splitlines() if ln.strip()]
+        # Header + one row per inserted edge.
+        assert len(lines) == edge_count + 1
+    finally:
+        main.DB_PATH = old_db_path
