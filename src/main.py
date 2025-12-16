@@ -235,6 +235,15 @@ def export_table_csv(table: str) -> StreamingResponse:
     return StreamingResponse(_iter(), media_type="text/csv; charset=utf-8", headers=headers)
 
 
+@app.get("/design-system", response_class=HTMLResponse)
+def design_system_page(request: Request) -> Any:
+    """Mockup page for the new Material + Tailwind Design System."""
+    return templates.TemplateResponse(
+        "design_system.html",
+        {"request": request}
+    )
+
+
 @app.get("/partials/artifacts-table", response_class=HTMLResponse)
 def artifacts_table_partial(request: Request, q: str | None = None, limit: int = 200) -> Any:
     with Session(_engine()) as session:

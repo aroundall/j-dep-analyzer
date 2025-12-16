@@ -1,36 +1,95 @@
 <div class="overflow-x-auto">
-  <table class="min-w-full text-sm border rounded-sm overflow-hidden border-[#E5E5E5]">
-    <thead class="bg-white text-[#333333]">
+  <table class="w-full text-sm text-left text-gray-500">
+    <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-100">
       <tr>
-        <th class="text-left p-2 border-b border-[#E5E5E5]" colspan="3">Source</th>
-        <th class="text-left p-2 border-b border-[#E5E5E5]" colspan="4">Target</th>
-      </tr>
-      <tr class="bg-[#F3F3F3] text-[#767676]">
-        <th class="text-left p-2 border-b border-[#E5E5E5]">G</th>
-        <th class="text-left p-2 border-b border-[#E5E5E5]">A</th>
-        <th class="text-left p-2 border-b border-[#E5E5E5]">V</th>
-        <th class="text-left p-2 border-b border-[#E5E5E5]">G</th>
-        <th class="text-left p-2 border-b border-[#E5E5E5]">A</th>
-        <th class="text-left p-2 border-b border-[#E5E5E5]">V</th>
-        <th class="text-left p-2 border-b border-[#E5E5E5]">Scope</th>
+        <th scope="col" class="px-6 py-4 font-semibold w-1/3">Source (Dependent)</th>
+        <th scope="col" class="px-6 py-4 font-semibold w-1/3">Target (Dependency)</th>
+        <th scope="col" class="px-6 py-4 font-semibold w-1/6">Scope</th>
+        <th scope="col" class="px-6 py-4 font-semibold text-right w-1/6">Action</th>
       </tr>
     </thead>
-    <tbody>
-      {% for r in rows %}
-      <tr class="hover:bg-[#E8E8E8] cursor-pointer" onclick="window.location.href='/details/{{ r.details_id }}{% if scope and scope|length > 0 %}?{% for s in scope %}scope={{ s|urlencode }}{% if not loop.last %}&{% endif %}{% endfor %}{% endif %}'">
-        <td class="p-2 border-b border-[#E5E5E5] font-mono text-sm">{{ r.source_group }}</td>
-        <td class="p-2 border-b border-[#E5E5E5] font-mono text-sm">{{ r.source_artifact }}</td>
-        <td class="p-2 border-b border-[#E5E5E5] font-mono text-sm">{{ r.source_version }}</td>
-        <td class="p-2 border-b border-[#E5E5E5] font-mono text-sm">{{ r.target_group }}</td>
-        <td class="p-2 border-b border-[#E5E5E5] font-mono text-sm">{{ r.target_artifact }}</td>
-        <td class="p-2 border-b border-[#E5E5E5] font-mono text-sm">{{ r.target_version }}</td>
-        <td class="p-2 border-b border-[#E5E5E5] text-[#767676] font-mono text-sm">{{ r.scope }}</td>
+    <tbody class="divide-y divide-gray-100">
+      {% for row in rows %}
+      <tr class="bg-white hover:bg-gray-50 transition-colors group cursor-pointer"
+        ondblclick="window.location.href='/visualize/{{ row.details_id|urlencode }}';">
+        <!-- Source -->
+        <td class="px-6 py-4">
+          <div class="flex flex-col">
+            <span class="font-bold text-gray-900">{{ row.source_artifact }}</span>
+            {% if row.source_group %}
+            <span class="text-xs text-text-secondary font-mono mt-0.5">{{ row.source_group }}</span>
+            {% endif %}
+            {% if row.source_version %}
+            <span
+              class="mt-1 inline-flex w-fit items-center px-2 py-0.5 rounded text-xs font-mono bg-indigo-50 text-indigo-700 border border-indigo-100">
+              {{ row.source_version }}
+            </span>
+            {% endif %}
+          </div>
+        </td>
+
+        <!-- Target -->
+        <td class="px-6 py-4">
+          <div class="flex flex-col">
+            <span class="font-bold text-gray-900">{{ row.target_artifact }}</span>
+            {% if row.target_group %}
+            <span class="text-xs text-text-secondary font-mono mt-0.5">{{ row.target_group }}</span>
+            {% endif %}
+            {% if row.target_version %}
+            <span
+              class="mt-1 inline-flex w-fit items-center px-2 py-0.5 rounded text-xs font-mono bg-indigo-50 text-indigo-700 border border-indigo-100">
+              {{ row.target_version }}
+            </span>
+            {% endif %}
+          </div>
+        </td>
+
+        <!-- Scope -->
+        <td class="px-6 py-4">
+          {% set s = row.scope|lower %}
+          {% set color = 'bg-gray-100 text-gray-800' %}
+          {% if 'compile' in s %}
+          {% set color = 'bg-green-50 text-green-700 border border-green-100' %}
+          {% elif 'test' in s %}
+          {% set color = 'bg-purple-50 text-purple-700 border border-purple-100' %}
+          {% elif 'provided' in s %}
+          {% set color = 'bg-orange-50 text-orange-700 border border-orange-100' %}
+          {% elif 'runtime' in s %}
+          {% set color = 'bg-blue-50 text-blue-700 border border-blue-100' %}
+          {% endif %}
+
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium {{ color }}">
+            <span class="w-1.5 h-1.5 rounded-full bg-current opacity-75"></span>
+            {{ row.scope }}
+          </span>
+        </td>
+
+        <!-- Action -->
+        <td class="px-6 py-4 text-right">
+          <a href="/visualize/{{ row.details_id|urlencode }}"
+            class="text-gray-400 hover:text-primary-600 transition-colors inline-block p-1 rounded-full hover:bg-indigo-50"
+            title="View Graph">
+            <span class="material-symbols-outlined text-[20px]">hub</span>
+          </a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="4" class="px-6 py-12 text-center text-gray-500">
+          <div class="flex flex-col items-center gap-2">
+            <span class="material-symbols-outlined text-3xl text-gray-300">inbox</span>
+            <p>No dependencies found matching filters.</p>
+          </div>
+        </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
+</div>
 
-  {% if not rows %}
-    <div class="mt-3 text-sm text-[#767676]">No results.</div>
+<div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between text-xs text-gray-500">
+  <span>Showing {{ limit if limit else 'all' }} rows</span>
+  {% if limit and rows|length >= limit %}
+  <span class="text-orange-600 font-medium">Result truncated. Use filters to narrow down.</span>
   {% endif %}
 </div>

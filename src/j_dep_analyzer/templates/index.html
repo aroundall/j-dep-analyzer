@@ -1,261 +1,244 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="grid grid-cols-1 gap-6">
-  <section class="bg-white border rounded-sm p-4 shadow-sm border-[#E5E5E5]">
-    <h2 class="font-semibold mb-2">Upload POM(s)</h2>
+<div class="space-y-8">
 
-    <form
-      id="upload-form"
-      class="flex flex-col gap-3"
-      hx-post="/api/upload"
-      hx-encoding="multipart/form-data"
-      hx-target="#upload-status"
-      hx-swap="innerHTML"
-      hx-indicator="#upload-indicator"
-      hx-on:htmx:beforeRequest="document.getElementById('upload-status').innerHTML = 'Uploading…';"
-      hx-on:htmx:afterRequest="if(event.detail.successful){window.reloadGraph && window.reloadGraph()}"
-      hx-on:htmx:responseError="document.getElementById('upload-status').innerHTML = event.detail.xhr.responseText;"
-    >
-      <div
-        id="dropzone"
-        class="relative w-full rounded-sm border border-dashed border-[#E5E5E5] bg-[#F3F3F3] px-4 py-6 text-sm text-[#333333]"
-      >
-        <input
-          id="file-input"
-          class="absolute inset-0 h-full w-full opacity-0 cursor-pointer"
-          type="file"
-          name="files"
-          multiple
-        />
-        <div class="text-center">
-          <div class="font-medium">Drag & drop pom.xml file(s) here</div>
-          <div class="text-xs text-[#767676] mt-1">or click to select multiple files</div>
-          <div id="selected-files" class="text-xs text-[#767676] mt-2"></div>
-        </div>
+  <!-- Welcome / Upload Section -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+    <!-- Intro Card -->
+    <div
+      class="md:col-span-1 bg-indigo-600 rounded-2xl shadow-mate-3 p-8 text-white relative overflow-hidden flex flex-col justify-center">
+      <div class="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-indigo-400 opacity-20 rounded-full blur-2xl">
       </div>
 
-      <div class="flex items-center gap-3">
-        <button class="px-3 py-2 text-sm ql-btn ql-btn-primary" type="submit">Upload</button>
-        <div id="upload-indicator" class="htmx-indicator text-xs text-[#767676]">Uploading…</div>
-        <div class="text-xs text-[#767676]">Upload parses and upserts into SQLite.</div>
+      <div class="relative z-10">
+        <h2 class="text-3xl font-bold mb-2">Welcome</h2>
+        <p class="text-indigo-100 mb-6">
+          Upload your <code>pom.xml</code> files to analyze dependency trees and identify conflicts across your
+          microservices.
+        </p>
       </div>
-    </form>
-
-    <div id="upload-status" class="mt-3 text-sm text-[#333333]"></div>
-    <div class="mt-2 text-xs text-[#767676]">DB: {{ db_path }}</div>
-  </section>
-
-  <section class="bg-white border rounded-sm p-4 shadow-sm border-[#E5E5E5]">
-    <div class="flex flex-wrap items-center gap-4 mb-3">
-      <label class="flex items-center gap-2 text-sm">
-        <input id="show-group" type="checkbox" class="accent-[#0090F1]" {% if show_group %}checked{% endif %} />
-        <span>Show Group</span>
-      </label>
-
-      <label class="flex items-center gap-2 text-sm">
-        <input id="show-version" type="checkbox" class="accent-[#0090F1]" {% if show_version %}checked{% endif %} />
-        <span>Show Version</span>
-      </label>
-
-      <label class="text-sm">
-        <span class="mr-2 text-[#767676]">Direction</span>
-        <select id="direction" class="border rounded-sm px-2 py-1 text-sm bg-white border-[#E5E5E5]">
-          <option value="forward" selected>A depends on B</option>
-          <option value="reverse">Who depends on B</option>
-        </select>
-      </label>
-
-      <label class="text-sm">
-        <span class="mr-2 text-[#767676]">Depth</span>
-        <select id="depth" class="border rounded-sm px-2 py-1 text-sm bg-white border-[#E5E5E5]">
-          <option value="">All</option>
-          <option value="1">1</option>
-          <option value="2" selected>2</option>
-        </select>
-      </label>
-
-      <label class="text-sm">
-        <span class="mr-2 text-[#767676]">Layout</span>
-        <select id="layout" class="border rounded-sm px-2 py-1 text-sm bg-white border-[#E5E5E5]">
-          <option value="dagre">dagre</option>
-          <option value="circle">circle</option>
-          <option value="concentric" selected>concentric</option>
-          <option value="cose">cose</option>
-        </select>
-      </label>
     </div>
 
-    <div id="cy" class="w-full border rounded-sm border-[#E5E5E5]" style="height: 720px;"></div>
-    <div id="meta" class="mt-2 text-xs text-[#767676]"></div>
-  </section>
+    <!-- Upload Widget -->
+    <div
+      class="md:col-span-2 bg-surface rounded-xl shadow-mate-1 border border-gray-100 p-8 flex flex-col justify-center">
+      <form id="upload-form" hx-encoding="multipart/form-data" hx-post="/api/upload" hx-target="#upload-status"
+        class="flex flex-col items-center gap-4">
+
+        <div
+          class="w-full text-center border-2 border-dashed border-gray-300 rounded-xl p-8 hover:bg-gray-50 transition-colors cursor-pointer relative group">
+          <input type="file" name="files" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            onchange="document.getElementById('file-count').innerText = this.files.length + ' files selected'">
+
+          <div class="flex flex-col items-center gap-2 text-gray-500 group-hover:text-primary-600 transition-colors">
+            <span class="material-symbols-outlined text-4xl">cloud_upload</span>
+            <p class="text-lg font-medium">Drag & drop POMs here</p>
+            <p class="text-sm">or click to browse</p>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between w-full">
+          <span id="file-count" class="text-sm text-gray-500 font-medium">No files selected</span>
+
+          <button type="submit"
+            class="ripple bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg shadow-sm shadow-primary-500/30 flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            <span class="material-symbols-outlined text-sm">upload</span>
+            Upload & Analyze
+            <span class="htmx-indicator material-symbols-outlined animate-spin text-sm">progress_activity</span>
+          </button>
+        </div>
+      </form>
+
+      <div id="upload-status" class="mt-4"></div>
+    </div>
+  </div>
+
+  <!-- Global Graph Card -->
+  <div class="bg-surface rounded-xl shadow-mate-1 border border-gray-100 flex flex-col overflow-hidden h-[800px]">
+    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary-600">hub</span>
+        <h3 class="font-semibold text-gray-900">Global Dependency Graph</h3>
+      </div>
+
+      <!-- Graph Controls -->
+      <div class="flex items-center gap-4 text-sm">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="toggle-group"
+            class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" {% if not show_group %}checked{%
+            endif %} onchange="refreshGraph()">
+          <span class="text-gray-600">Combine Groups</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="toggle-version"
+            class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" {% if not show_version %}checked{%
+            endif %} onchange="refreshGraph()">
+          <span class="text-gray-600">Combine Versions</span>
+        </label>
+
+        <div class="h-4 w-px bg-gray-300 mx-2"></div>
+
+        <select id="layout-select" onchange="updateLayout()"
+          class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-1.5">
+          <option value="dagre">Hierarchy (Dagre)</option>
+          <option value="cose">Force (Cose)</option>
+          <option value="grid">Grid</option>
+          <option value="circle">Circle</option>
+          <option value="concentric" selected>Concentric</option>
+          <option value="breadthfirst">Breadthfirst</option>
+        </select>
+
+        <button onclick="cy.fit()" class="text-gray-500 hover:text-primary-600" title="Fit to Screen">
+          <span class="material-symbols-outlined">fit_screen</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="cy" class="flex-grow w-full h-full bg-white relative"></div>
+  </div>
+
 </div>
 
 <script>
-  cytoscape.use(cytoscapeDagre);
+  var cy;
 
-  const cy = cytoscape({
-    container: document.getElementById("cy"),
-    elements: [],
-    minZoom: 0.45,
-    maxZoom: 4.0,
-    wheelSensitivity: 0.12,
-    style: [
-      { selector: "node", style: {
-        "label": "data(label)",
-        "background-color": "#BDBDBD",
-        "color": "#333333",
-        "text-valign": "center",
-        "text-halign": "center",
-        "font-size": "10px",
-        "width": 18,
-        "height": 18,
-      }},
-      { selector: "node.aggregated", style: {
-        "shape": "round-rectangle",
-        "width": 28,
-        "height": 18,
-        "background-color": "#D7D7D7",
-      }},
-      { selector: "node.root", style: { "background-color": "#0090F1" } },
-      { selector: "node.highlight", style: { "background-color": "#800080" } },
-      { selector: "edge", style: {
-        "curve-style": "bezier",
-        "target-arrow-shape": "triangle",
-        "target-arrow-color": "#BDBDBD",
-        "line-color": "#E5E5E5",
-        "width": 1,
-        "label": "data(scope)",
-        "font-size": "8px",
-        "text-rotation": "autorotate",
-        "color": "#767676"
-      }},
-    ],
+  document.addEventListener('DOMContentLoaded', function () {
+    refreshGraph();
+
+    // Refresh graph after successful upload
+    document.body.addEventListener('htmx:afterOnLoad', function (evt) {
+      if (evt.detail.elt.id === 'upload-form') {
+        // Slight delay to ensure DB is committed and ready
+        setTimeout(refreshGraph, 500);
+      }
+    });
   });
 
-  function buildParams() {
-    const showGroup = document.getElementById("show-group").checked;
-    const showVersion = document.getElementById("show-version").checked;
-    const direction = document.getElementById("direction").value;
-    const depthVal = document.getElementById("depth").value;
+  function refreshGraph() {
+    // Inverted logic: if checkbox is checked ("Combine"), then show_X = false
+    const showGroup = !document.getElementById('toggle-group').checked;
+    const showVersion = !document.getElementById('toggle-version').checked;
 
-    const p = new URLSearchParams();
-    p.set("show_group", String(showGroup));
-    p.set("show_version", String(showVersion));
-    p.set("direction", direction);
-    if (depthVal) p.set("depth", depthVal);
-    return p.toString();
+    fetch(`/api/graph/data?show_group=${showGroup}&show_version=${showVersion}&direction=forward`)
+      .then(res => res.json())
+      .then(data => {
+        const el = document.getElementById('cy');
+        if (!data.elements || data.elements.length === 0) {
+          el.innerHTML = '<div class="flex h-full items-center justify-center text-gray-400">No dependency data found. Upload a POM file to start.</div>';
+          if (cy) cy.destroy();
+          cy = null;
+        } else {
+          el.innerHTML = ''; // Clear empty message
+          initCy(data.elements);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load graph:", err);
+      });
   }
 
-  function runLayout() {
-    const layoutName = document.getElementById("layout").value;
-    let opts;
-    if (layoutName === "dagre") {
-      opts = { name: "dagre", rankDir: "LR", nodeSep: 30, edgeSep: 10, rankSep: 60, fit: false };
-    } else if (layoutName === "circle") {
-      opts = {
-        name: "circle",
-        fit: false,
-        padding: 90,
-        avoidOverlap: true,
-        nodeOverlap: 10,
-        spacingFactor: 1.8,
-      };
-    } else if (layoutName === "concentric") {
-      opts = {
-        name: "concentric",
-        fit: false,
-        padding: 90,
-        avoidOverlap: true,
-        nodeOverlap: 10,
-        spacingFactor: 1.6,
-        minNodeSpacing: 20,
-        levelWidth: () => 1,
-      };
-    } else {
-      opts = {
-        name: "cose",
-        animate: false,
-        randomize: true,
-        fit: false,
-        padding: 90,
-        numIter: 2000,
-        nodeRepulsion: 52000,
-        nodeOverlap: 10,
-        idealEdgeLength: 180,
-        edgeElasticity: 0.2,
-        gravity: 0.15,
-        componentSpacing: 200,
-      };
-    }
+  function initCy(elements) {
+    if (cy) cy.destroy();
 
-    const layout = cy.layout(opts);
-    layout.on('layoutstop', () => {
-      // Fit only after layout finishes; otherwise all nodes can be at (0,0)
-      // and Cytoscape will zoom to the maximum, making everything unreadable.
-      cy.fit(undefined, 70);
-
-      const z = cy.zoom();
-      const minZ = cy.minZoom();
-      const maxZ = cy.maxZoom();
-      const preferredMaxInitialZoom = Math.min(1.25, maxZ);
-
-      if (z < minZ) cy.zoom(minZ);
-      if (z > preferredMaxInitialZoom) cy.zoom(preferredMaxInitialZoom);
-      cy.center();
-    });
-    layout.run();
-  }
-
-  window.reloadGraph = async function() {
-    const res = await fetch(`/api/graph/data?${buildParams()}`);
-    const payload = await res.json();
-
-    cy.elements().remove();
-    cy.add(payload.elements);
-    runLayout();
-
-    document.getElementById("meta").textContent =
-      `nodes=${payload.meta.node_count}, edges=${payload.meta.edge_count}, show_group=${payload.meta.show_group}, show_version=${payload.meta.show_version}, direction=${payload.meta.direction}, depth=${payload.meta.depth ?? "All"}`;
-  };
-
-  document.getElementById("show-group").addEventListener("change", window.reloadGraph);
-  document.getElementById("show-version").addEventListener("change", window.reloadGraph);
-  document.getElementById("direction").addEventListener("change", window.reloadGraph);
-  document.getElementById("depth").addEventListener("change", window.reloadGraph);
-  document.getElementById("layout").addEventListener("change", runLayout);
-
-  window.reloadGraph();
-</script>
-
-<script>
-  (function() {
-    const dz = document.getElementById('dropzone');
-    const input = document.getElementById('file-input');
-    const list = document.getElementById('selected-files');
-    const form = document.getElementById('upload-form');
-
-    function renderSelected() {
-      if (!input.files || input.files.length === 0) {
-        list.textContent = '';
-        return;
-      }
-      const names = Array.from(input.files).map(f => f.name);
-      list.textContent = names.join(', ');
-    }
-
-    dz.addEventListener('dragover', (e) => {
-      e.preventDefault();
-    });
-
-    dz.addEventListener('drop', (e) => {
-      e.preventDefault();
-      if (e.dataTransfer && e.dataTransfer.files) {
-        input.files = e.dataTransfer.files;
-        renderSelected();
+    cy = cytoscape({
+      container: document.getElementById('cy'),
+      elements: elements,
+      minZoom: 0.1,
+      maxZoom: 3,
+      wheelSensitivity: 0.3,
+      style: [
+        {
+          selector: 'node',
+          style: {
+            'background-color': '#6366f1', // Primary 500
+            'label': 'data(label)',
+            'color': '#1e293b', // Text Primary
+            'font-size': '12px',
+            'font-family': 'Inter, sans-serif',
+            'text-valign': 'center',
+            'text-halign': 'center',
+            'width': 'label',
+            'height': 'label',
+            'padding': '12px',
+            'shape': 'round-rectangle',
+            'text-wrap': 'wrap',
+            'text-max-width': '120px',
+            'border-width': 1,
+            'border-color': '#e0e7ff',
+            'background-opacity': 0.1
+          }
+        },
+        {
+          selector: 'node[type="group"]',
+          style: {
+            'background-color': '#f1f5f9',
+            'shape': 'ellipse',
+            'width': 20,
+            'height': 20,
+            'label': ''
+          }
+        },
+        {
+          selector: 'edge',
+          style: {
+            'width': 1,
+            'line-color': '#cbd5e1', // Slate 300
+            'target-arrow-color': '#cbd5e1',
+            'target-arrow-shape': 'triangle',
+            'curve-style': 'bezier'
+          }
+        },
+        {
+          selector: ':selected',
+          style: {
+            'background-color': '#4f46e5',
+            'line-color': '#4f46e5',
+            'target-arrow-color': '#4f46e5',
+            'source-arrow-color': '#4f46e5',
+            'color': '#4f46e5',
+            'font-weight': 'bold',
+            'border-color': '#4f46e5',
+            'border-width': 2
+          }
+        }
+      ],
+      layout: {
+        name: document.getElementById('layout-select').value,
+        rankDir: 'LR',
+        padding: 50,
+        animate: true,
+        stop: function () {
+          cy.fit(undefined, 50); // Fit graph to container with 50px padding
+        }
       }
     });
 
-    input.addEventListener('change', renderSelected);
-  })();
+    cy.on('tap', 'node', function (evt) {
+      var node = evt.target;
+      const id = node.id();
+      if (id) {
+        window.location.href = `/visualize/${encodeURIComponent(id)}`;
+      }
+    });
+  }
+  function updateLayout() {
+    if (!cy) return;
+    const layoutName = document.getElementById('layout-select').value;
+    const layoutConfig = {
+      name: layoutName,
+      animate: true,
+      animationDuration: 500,
+      padding: 50
+    };
+
+    if (layoutName === 'dagre') {
+      layoutConfig.rankDir = 'LR';
+    }
+
+    cy.layout(layoutConfig).run();
+  }
 </script>
 {% endblock %}

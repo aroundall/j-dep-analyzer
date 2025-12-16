@@ -1,124 +1,109 @@
 {% extends "base.html" %}
+
 {% block content %}
-<section class="bg-white border rounded-sm p-4 shadow-sm border-[#E5E5E5]">
-  <h2 class="font-semibold mb-3">Dependencies (Pair List)</h2>
+<div class="space-y-6">
 
-  <div class="flex flex-wrap items-center gap-3 mb-3">
-    <input
-      id="dep-q"
-      class="border rounded-sm px-3 py-2 w-full md:w-96 text-sm bg-white border-[#E5E5E5]"
-      type="text"
-      name="q"
-      placeholder="Filter by ArtifactId..."
-      hx-get="/partials/dependencies-table"
-      hx-trigger="keyup changed delay:300ms"
-      hx-target="#dep-table"
-      hx-include="[name='q'],[name='group_q'],[name='scope'],[name='ignore_version'],[name='ignore_group']"
-    />
+  <div class="flex items-center justify-between gap-4">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">Dependency Explorer</h2>
+      <p class="text-text-secondary">Explore all declared dependencies and their relationships.</p>
+    </div>
 
-    <input
-      id="dep-group-q"
-      class="border rounded-sm px-3 py-2 w-full md:w-80 text-sm bg-white border-[#E5E5E5]"
-      type="text"
-      name="group_q"
-      placeholder="Filter by GroupId..."
-      hx-get="/partials/dependencies-table"
-      hx-trigger="keyup changed delay:300ms"
-      hx-target="#dep-table"
-      hx-include="[name='q'],[name='group_q'],[name='scope'],[name='ignore_version'],[name='ignore_group']"
-    />
-
-    <select
-      id="dep-scope"
-      name="scope"
-      multiple
-      class="border rounded-sm px-3 py-2 text-sm bg-white w-full md:w-72 border-[#E5E5E5]"
-      hx-get="/partials/dependencies-table"
-      hx-trigger="change"
-      hx-target="#dep-table"
-      hx-include="[name='q'],[name='group_q'],[name='scope'],[name='ignore_version'],[name='ignore_group']"
-    >
-      {% for s in scopes or [] %}
-        <option value="{{ s }}">{{ s }}</option>
-      {% endfor %}
-    </select>
-
-    <label class="flex items-center gap-2 text-sm">
-      <input
-        id="dep-ignore-version"
-        type="checkbox"
-        name="ignore_version"
-        class="accent-[#0090F1]"
-        hx-get="/partials/dependencies-table"
-        hx-trigger="change"
-        hx-target="#dep-table"
-        hx-include="[name='q'],[name='group_q'],[name='scope'],[name='ignore_version'],[name='ignore_group']"
-      />
-      <span>Ignore Version</span>
-    </label>
-
-    <label class="flex items-center gap-2 text-sm">
-      <input
-        id="dep-ignore-group"
-        type="checkbox"
-        name="ignore_group"
-        class="accent-[#0090F1]"
-        hx-get="/partials/dependencies-table"
-        hx-trigger="change"
-        hx-target="#dep-table"
-        hx-include="[name='q'],[name='group_q'],[name='scope'],[name='ignore_version'],[name='ignore_group']"
-      />
-      <span>Ignore GroupId</span>
-    </label>
-
-    <a
-      id="export-csv"
-      class="px-3 py-2 text-sm ql-btn"
-      href="/api/dependencies/export"
-    >Export CSV</a>
+    <button onclick="downloadCsv()"
+      class="ripple inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-primary-600 hover:border-primary-200 transition-all shadow-sm">
+      <span class="material-symbols-outlined text-[18px]">download</span>
+      Export CSV
+    </button>
   </div>
 
-  <div
-    id="dep-table"
-    hx-get="/partials/dependencies-table"
-    hx-trigger="load"
-    hx-include="[name='q'],[name='group_q'],[name='scope'],[name='ignore_version'],[name='ignore_group']"
-    hx-swap="innerHTML"
-  ></div>
+  <!-- Filter Card -->
+  <div class="bg-surface rounded-xl shadow-mate-1 border border-gray-100 p-6" x-data="{ 
+            q: '', 
+            group_q: '', 
+            scope: [], 
+            ignore_version: false, 
+            ignore_group: false 
+         }">
 
-  <div class="mt-2 text-xs text-[#767676]">DB: {{ db_path }}</div>
-</section>
+    <form hx-get="/partials/dependencies-table" hx-target="#dep-table" hx-trigger="input delay:200ms, change, load"
+      class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+
+      <!-- Filter Artifact -->
+      <div class="col-span-1">
+        <label class="block mb-2 text-sm font-medium text-gray-900">Artifact Search</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <span class="material-symbols-outlined text-gray-400 text-[20px]">search</span>
+          </div>
+          <input type="text" name="q"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5"
+            placeholder="e.g. spring-web">
+        </div>
+      </div>
+
+      <!-- Filter Group -->
+      <div class="col-span-1">
+        <label class="block mb-2 text-sm font-medium text-gray-900">Group Filter</label>
+        <input type="text" name="group_q"
+          class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5"
+          placeholder="e.g. com.google">
+      </div>
+
+      <!-- Scopes & Toggles -->
+      <div class="col-span-2 flex flex-wrap items-center gap-6">
+        <!-- Scope Select -->
+        <div>
+          <label class="block mb-2 text-sm font-medium text-gray-900">Scope</label>
+          <select name="scope" multiple size="1"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 h-[42px]">
+            {% for s in scopes %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+          </select>
+          <p class="text-xs text-gray-500 mt-1">Hold Ctrl to select multiple</p>
+        </div>
+
+        <!-- Checkboxes -->
+        <div class="flex flex-col gap-2 pt-4">
+          <label class="inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="ignore_version" value="true"
+              class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 focus:ring-2">
+            <span class="ml-2 text-sm font-medium text-gray-900">Ignore Version</span>
+          </label>
+          <label class="inline-flex items-center cursor-pointer">
+            <input type="checkbox" name="ignore_group" value="true"
+              class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 focus:ring-2">
+            <span class="ml-2 text-sm font-medium text-gray-900">Ignore Group</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Hidden Export params sync -->
+      <!-- Note: Export logic is separate via link, but we could make it dynamic JS if needed. For now keeping simple. -->
+    </form>
+  </div>
+
+  <!-- Table Container -->
+  <div id="dep-table" class="bg-surface rounded-xl shadow-mate-1 border border-gray-100 overflow-hidden min-h-[400px]">
+    <!-- Content loaded via HTMX -->
+    <div class="p-12 flex flex-col items-center justify-center text-gray-400">
+      <span class="material-symbols-outlined text-4xl animate-spin mb-4">progress_activity</span>
+      <p>Loading dependencies...</p>
+    </div>
+  </div>
+
+</div>
 
 <script>
-  (function() {
-    const q = document.getElementById('dep-q');
-    const gq = document.getElementById('dep-group-q');
-    const scopeSel = document.getElementById('dep-scope');
-    const iv = document.getElementById('dep-ignore-version');
-    const ig = document.getElementById('dep-ignore-group');
-    const link = document.getElementById('export-csv');
+  function downloadCsv() {
+    // Collect all inputs from the form
+    const form = document.querySelector('form');
+    const formData = new FormData(form);
+    const params = new URLSearchParams(formData);
 
-    function update() {
-      const p = new URLSearchParams();
-      if (q && q.value) p.set('q', q.value);
-      if (gq && gq.value) p.set('group_q', gq.value);
-
-      if (scopeSel) {
-        const selected = Array.from(scopeSel.selectedOptions || []).map(o => o.value).filter(Boolean);
-        for (const s of selected) p.append('scope', s);
-      }
-
-      if (iv && iv.checked) p.set('ignore_version', 'true');
-      if (ig && ig.checked) p.set('ignore_group', 'true');
-      link.href = `/api/dependencies/export?${p.toString()}`;
-    }
-
-    q && q.addEventListener('input', update);
-    gq && gq.addEventListener('input', update);
-    scopeSel && scopeSel.addEventListener('change', update);
-    iv && iv.addEventListener('change', update);
-    ig && ig.addEventListener('change', update);
-    update();
-  })();
+    // Redirect to download
+    window.location.href = `/api/dependencies/export?${params.toString()}`;
+  }
 </script>
 {% endblock %}
+```

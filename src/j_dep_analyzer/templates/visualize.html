@@ -1,219 +1,231 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-  <section class="bg-white border rounded-sm p-4 shadow-sm border-[#E5E5E5] lg:col-span-1">
-    <div class="text-sm text-[#767676]">Selected</div>
-    <div class="mt-1 font-mono text-sm break-all">{{ root_id }}</div>
+<div class="flex flex-col lg:flex-row gap-6 h-[calc(100vh-8rem)]">
 
-    <div class="mt-4 text-sm">
-      <div class="flex justify-between gap-3"><span class="text-[#767676]">Group</span><span class="font-mono text-sm">{{ root_group }}</span></div>
-      <div class="flex justify-between gap-3"><span class="text-[#767676]">Artifact</span><span class="font-mono text-sm">{{ root_artifact }}</span></div>
-      <div class="flex justify-between gap-3"><span class="text-[#767676]">Version</span><span class="font-mono text-sm">{{ root_version }}</span></div>
-    </div>
+  <!-- Sidebar: Controls & Info -->
+  <div class="w-full lg:w-80 flex-shrink-0 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
 
-    <div class="mt-4 text-xs text-[#767676]">DB: {{ db_path }}</div>
-  </section>
+    <!-- Back Link -->
+    <a href="/dependencies/list"
+      class="flex items-center gap-1 text-sm text-gray-500 hover:text-primary-600 transition-colors">
+      <span class="material-symbols-outlined text-sm">arrow_back</span>
+      Back to List
+    </a>
 
-  <section class="bg-white border rounded-sm p-4 shadow-sm border-[#E5E5E5] lg:col-span-3">
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-      <div class="text-sm font-medium">Dependency View</div>
+    <!-- Artifact Info Card -->
+    <div class="bg-surface rounded-xl shadow-mate-1 border border-gray-100 p-6">
+      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Focused Artifact</h3>
 
-      <div class="flex flex-wrap items-center gap-4">
-        <label class="flex items-center gap-2 text-sm">
-          <input id="show-group" type="checkbox" class="accent-[#0090F1]" {% if show_group %}checked{% endif %} />
-          <span>Show Group</span>
-        </label>
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs text-gray-400">Artifact ID</label>
+          <div class="font-bold text-gray-900 text-lg break-words">{{ root_artifact }}</div>
+        </div>
 
-        <label class="flex items-center gap-2 text-sm">
-          <input id="show-version" type="checkbox" class="accent-[#0090F1]" {% if show_version %}checked{% endif %} />
-          <span>Show Version</span>
-        </label>
+        <div>
+          <label class="text-xs text-gray-400">Group ID</label>
+          <div class="font-mono text-sm text-primary-600 break-all bg-primary-50 px-2 py-1 rounded inline-block mt-1">{{
+            root_group }}</div>
+        </div>
 
-        <label class="text-sm">
-          <span class="mr-2 text-[#767676]">Scope</span>
-          <select id="scope" class="border rounded-sm px-2 py-1 text-sm bg-white border-[#E5E5E5]" multiple>
-            {% for s in scopes or [] %}
-              <option value="{{ s }}" {% if selected_scopes and (s in selected_scopes) %}selected{% endif %}>{{ s }}</option>
-            {% endfor %}
-          </select>
-        </label>
-
-        <label class="text-sm">
-          <span class="mr-2 text-[#767676]">Direction</span>
-          <select id="direction" class="border rounded-sm px-2 py-1 text-sm bg-white border-[#E5E5E5]">
-            <option value="forward" selected>Forward</option>
-            <option value="reverse">Reverse</option>
-          </select>
-        </label>
-
-        <label class="text-sm">
-          <span class="mr-2 text-[#767676]">Depth</span>
-          <select id="depth" class="border rounded-sm px-2 py-1 text-sm bg-white border-[#E5E5E5]">
-            <option value="">All</option>
-            <option value="1">1</option>
-            <option value="2" selected>2</option>
-          </select>
-        </label>
-
-        <label class="text-sm">
-          <span class="mr-2 text-[#767676]">Layout</span>
-          <select id="layout" class="border rounded-sm px-2 py-1 text-sm bg-white border-[#E5E5E5]">
-            <option value="dagre">dagre</option>
-            <option value="circle">circle</option>
-            <option value="concentric" selected>concentric</option>
-            <option value="cose">cose</option>
-          </select>
-        </label>
+        <div>
+          <label class="text-xs text-gray-400">Version</label>
+          <div class="font-mono text-sm text-gray-700 bg-gray-100 px-2 py-1 rounded inline-block mt-1">{{ root_version
+            }}</div>
+        </div>
       </div>
     </div>
 
-    <div id="cy" class="w-full border rounded-sm border-[#E5E5E5]" style="height: 720px;"></div>
-    <div id="meta" class="mt-2 text-xs text-[#767676]"></div>
-  </section>
+    <!-- Controls Card -->
+    <div class="bg-surface rounded-xl shadow-mate-1 border border-gray-100 p-6 flex-grow">
+      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Graph Settings</h3>
+
+      <form id="graph-controls" class="space-y-6">
+
+        <!-- Depth -->
+        <div>
+          <label class="block text-sm font-medium text-gray-900 mb-2">Search Depth</label>
+          <input type="range" id="depth" min="1" max="5" value="2"
+            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600">
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+          </div>
+        </div>
+
+        <!-- Direction -->
+        <div>
+          <label class="block text-sm font-medium text-gray-900 mb-2">Direction</label>
+          <div class="flex rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <label class="flex-1 cursor-pointer">
+              <input type="radio" name="direction" value="forward" checked class="peer sr-only">
+              <span
+                class="block text-center py-2 text-sm bg-gray-50 peer-checked:bg-primary-600 peer-checked:text-white transition-colors">Depend
+                on</span>
+            </label>
+            <label class="flex-1 cursor-pointer border-l border-gray-200">
+              <input type="radio" name="direction" value="reverse" class="peer sr-only">
+              <span
+                class="block text-center py-2 text-sm bg-gray-50 peer-checked:bg-primary-600 peer-checked:text-white transition-colors">Make
+                use of</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Toggles -->
+        <div class="space-y-2">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="show-group"
+              class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+            <span class="text-sm text-gray-900">Show Group IDs</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="show-version"
+              class="rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+            <span class="text-sm text-gray-900">Show Versions</span>
+          </label>
+        </div>
+
+        <!-- Layout Selector -->
+        <div>
+          <label class="block text-sm font-medium text-gray-900 mb-2">Layout</label>
+          <select id="layout-select"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+            <option value="dagre" selected>Hierarchy (Dagre)</option>
+            <option value="cose">Force (Cose)</option>
+            <option value="grid">Grid</option>
+            <option value="circle">Circle</option>
+            <option value="concentric">Concentric</option>
+            <option value="breadthfirst">Breadthfirst</option>
+          </select>
+        </div>
+
+        <button type="button" onclick="loadGraph()"
+          class="w-full ripple bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm shadow-primary-500/30 transition-all">
+          Update Graph
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main: Graph Canvas -->
+  <div
+    class="flex-grow bg-surface rounded-xl shadow-mate-1 border border-gray-100 relative overflow-hidden flex flex-col">
+    <div class="absolute top-4 left-4 z-10 flex gap-2">
+      <div
+        class="bg-white/80 backdrop-blur px-3 py-1 rounded-full border border-gray-200 text-xs text-gray-500 shadow-sm">
+        <span id="node-count">0</span> Nodes
+      </div>
+      <div
+        class="bg-white/80 backdrop-blur px-3 py-1 rounded-full border border-gray-200 text-xs text-gray-500 shadow-sm">
+        <span id="edge-count">0</span> Edges
+      </div>
+    </div>
+
+    <div id="cy" class="w-full h-full bg-slate-50"></div>
+  </div>
+
 </div>
 
 <script>
-  cytoscape.use(cytoscapeDagre);
+  var cy;
+  const rootId = "{{ root_id }}"; // Server injected
 
-  const ROOT_ID = {{ root_id | tojson }};
-
-  const cy = cytoscape({
-    container: document.getElementById("cy"),
-    elements: [],
-    minZoom: 0.45,
-    maxZoom: 4.0,
-    wheelSensitivity: 0.12,
-    style: [
-      { selector: "node", style: {
-        "label": "data(label)",
-        "background-color": "#BDBDBD",
-        "color": "#333333",
-        "text-valign": "center",
-        "text-halign": "center",
-        "font-size": "10px",
-        "width": 18,
-        "height": 18,
-      }},
-      { selector: "node.aggregated", style: {
-        "shape": "round-rectangle",
-        "width": 28,
-        "height": 18,
-        "background-color": "#D7D7D7",
-      }},
-      { selector: "node.root", style: { "background-color": "#0090F1" } },
-      { selector: "node.highlight", style: { "background-color": "#800080" } },
-      { selector: "edge", style: {
-        "curve-style": "bezier",
-        "target-arrow-shape": "triangle",
-        "target-arrow-color": "#BDBDBD",
-        "line-color": "#E5E5E5",
-        "width": 1,
-        "label": "data(scope)",
-        "font-size": "8px",
-        "text-rotation": "autorotate",
-        "color": "#767676"
-      }},
-    ],
+  document.addEventListener('DOMContentLoaded', function () {
+    loadGraph();
   });
 
-  function buildParams() {
-    const showGroup = document.getElementById("show-group").checked;
-    const showVersion = document.getElementById("show-version").checked;
-    const scopeSel = document.getElementById("scope");
-    const direction = document.getElementById("direction").value;
-    const depthVal = document.getElementById("depth").value;
+  function loadGraph() {
+    // Collect params
+    const direction = document.querySelector('input[name="direction"]:checked').value;
+    const depth = document.getElementById('depth').value;
+    const showGroup = document.getElementById('show-group').checked;
+    const showVersion = document.getElementById('show-version').checked;
 
-    const p = new URLSearchParams();
-    p.set("root_id", ROOT_ID);
-    p.set("show_group", String(showGroup));
-    p.set("show_version", String(showVersion));
-    if (scopeSel) {
-      const selected = Array.from(scopeSel.selectedOptions || []).map(o => o.value).filter(Boolean);
-      for (const s of selected) p.append("scope", s);
-    }
-    p.set("direction", direction);
-    if (depthVal) p.set("depth", depthVal);
-    return p.toString();
+    const url = `/api/graph/data?root_id=${encodeURIComponent(rootId)}&direction=${direction}&depth=${depth}&show_group=${showGroup}&show_version=${showVersion}`;
+
+    // Show loading state if needed (optional)
+
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('node-count').innerText = data.meta.node_count;
+        document.getElementById('edge-count').innerText = data.meta.edge_count;
+        initCy(data.elements);
+      });
   }
 
-  function runLayout() {
-    const layoutName = document.getElementById("layout").value;
-    let opts;
-    if (layoutName === "dagre") {
-      opts = { name: "dagre", rankDir: "LR", nodeSep: 30, edgeSep: 10, rankSep: 60, fit: false };
-    } else if (layoutName === "circle") {
-      opts = {
-        name: "circle",
-        fit: false,
-        padding: 90,
-        avoidOverlap: true,
-        nodeOverlap: 10,
-        spacingFactor: 1.8,
-      };
-    } else if (layoutName === "concentric") {
-      opts = {
-        name: "concentric",
-        fit: false,
-        padding: 90,
-        avoidOverlap: true,
-        nodeOverlap: 10,
-        spacingFactor: 1.6,
-        minNodeSpacing: 20,
-        levelWidth: () => 1,
-      };
-    } else {
-      opts = {
-        name: "cose",
-        animate: false,
-        randomize: true,
-        fit: false,
-        padding: 90,
-        numIter: 2000,
-        nodeRepulsion: 52000,
-        nodeOverlap: 10,
-        idealEdgeLength: 180,
-        edgeElasticity: 0.2,
-        gravity: 0.15,
-        componentSpacing: 200,
-      };
-    }
+  function initCy(elements) {
+    if (cy) cy.destroy();
 
-    const layout = cy.layout(opts);
-    layout.on('layoutstop', () => {
-      cy.fit(undefined, 70);
-
-      const z = cy.zoom();
-      const minZ = cy.minZoom();
-      const maxZ = cy.maxZoom();
-      const preferredMaxInitialZoom = Math.min(1.25, maxZ);
-
-      if (z < minZ) cy.zoom(minZ);
-      if (z > preferredMaxInitialZoom) cy.zoom(preferredMaxInitialZoom);
-      cy.center();
+    cy = cytoscape({
+      container: document.getElementById('cy'),
+      elements: elements,
+      minZoom: 0.1,
+      maxZoom: 3,
+      wheelSensitivity: 0.3,
+      style: [
+        {
+          selector: 'node',
+          style: {
+            'background-color': '#fff',
+            'border-width': 1,
+            'border-color': '#cbd5e1',
+            'label': 'data(label)',
+            'color': '#334155',
+            'font-size': '12px',
+            'font-family': 'Inter, sans-serif',
+            'text-valign': 'center',
+            'text-halign': 'center',
+            'width': 'label',
+            'height': 'label',
+            'padding': '16px',
+            'shape': 'round-rectangle',
+            'text-max-width': '200px',
+            'text-wrap': 'wrap'
+          }
+        },
+        {
+          selector: 'node[id = "' + rootId + '"]',
+          style: {
+            'background-color': '#e0e7ff', // Primary 100
+            'border-color': '#6366f1', // Primary 500
+            'border-width': 2,
+            'color': '#4338ca',
+            'font-weight': 'bold'
+          }
+        },
+        {
+          selector: 'edge',
+          style: {
+            'width': 1.5,
+            'line-color': '#94a3b8',
+            'target-arrow-color': '#94a3b8',
+            'target-arrow-shape': 'triangle',
+            'curve-style': 'bezier',
+            'arrow-scale': 1.2
+          }
+        }
+      ],
+      layout: {
+        name: document.getElementById('layout-select').value,
+        rankDir: 'LR',
+        animate: true,
+        animationDuration: 500,
+        padding: 50,
+        stop: function () {
+          cy.fit(undefined, 50);
+        }
+      }
     });
-    layout.run();
+
+    cy.on('tap', 'node', function (evt) {
+      var node = evt.target;
+      const id = node.id();
+      if (id && id !== rootId) {
+        window.location.href = `/visualize/${encodeURIComponent(id)}`;
+      }
+    });
   }
-
-  async function reloadGraph() {
-    const res = await fetch(`/api/graph/data?${buildParams()}`);
-    const payload = await res.json();
-
-    cy.elements().remove();
-    cy.add(payload.elements);
-    runLayout();
-
-    document.getElementById("meta").textContent =
-      `nodes=${payload.meta.node_count}, edges=${payload.meta.edge_count}, direction=${payload.meta.direction}, depth=${payload.meta.depth ?? "All"}`;
-  }
-
-  document.getElementById("show-group").addEventListener("change", reloadGraph);
-  document.getElementById("show-version").addEventListener("change", reloadGraph);
-  const scopeEl = document.getElementById("scope");
-  scopeEl && scopeEl.addEventListener("change", reloadGraph);
-  document.getElementById("direction").addEventListener("change", reloadGraph);
-  document.getElementById("depth").addEventListener("change", reloadGraph);
-  document.getElementById("layout").addEventListener("change", runLayout);
-
-  reloadGraph();
 </script>
 {% endblock %}

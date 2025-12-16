@@ -1,78 +1,150 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>{{ title or "J-Dep Analyzer" }}</title>
 
-    <!-- Fonts (Quiet Light) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ title or "J-Dep Analyzer" }}</title>
 
-    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter (UI) & Fira Code (Code) & Roboto (Material) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&family=Roboto:wght@300;400;500;700&display=swap"
+    rel="stylesheet" />
+  <!-- Material Symbols -->
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
-    <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
-    <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
-    <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
 
-    <style>
-      :root {
-        --ql-bg: #f3f3f3;
-        --ql-panel: #ffffff;
-        --ql-hover: #e8e8e8;
-        --ql-text: #333333;
-        --ql-meta: #767676;
-        --ql-border: #e5e5e5;
-        --ql-blue: #0090f1;
-        --ql-green: #098658;
-        --ql-purple: #800080;
-        --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        --font-mono: "Fira Code", "Consolas", "Monaco", monospace;
+  <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+  <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
+  <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Roboto', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          },
+          colors: {
+            primary: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1', // Indigo 500
+              600: '#4f46e5', // Indigo 600
+              700: '#4338ca', // Indigo 700
+            },
+            surface: '#ffffff',
+            background: '#f8fafc', // Slate 50
+            text: {
+              primary: '#1e293b', // Slate 800
+              secondary: '#64748b', // Slate 500
+            }
+          },
+          boxShadow: {
+            'mate-1': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+            'mate-2': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+            'mate-3': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+          }
+        }
       }
+    }
+  </script>
 
-      body { font-family: var(--font-sans); }
-      .font-mono { font-family: var(--font-mono); }
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      vertical-align: middle;
+    }
 
-      .htmx-indicator { display: none; }
-      .htmx-request .htmx-indicator { display: inline-flex; }
-      .htmx-request.htmx-indicator { display: inline-flex; }
+    .htmx-indicator {
+      display: none;
+    }
 
-      /* Quiet Light flat controls */
-      .ql-btn {
-        border: 1px solid var(--ql-border);
-        background: var(--ql-panel);
-        color: var(--ql-text);
-        border-radius: 2px;
-      }
-      .ql-btn:hover { background: var(--ql-hover); }
-      .ql-btn-primary {
-        background: var(--ql-blue);
-        border-color: var(--ql-blue);
-        color: #ffffff;
-      }
-      .ql-btn-primary:hover { filter: brightness(0.96); }
-    </style>
-  </head>
+    .htmx-request .htmx-indicator {
+      display: inline-flex;
+    }
 
-  <body class="bg-[#F3F3F3] text-[#333333]">
-    <header class="border-b bg-white border-[#E5E5E5]">
-      <div class="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
-        <a href="/" class="font-semibold text-[#333333]">J-Dep Analyzer</a>
-        <nav class="text-sm text-[#767676] flex gap-4">
-          <a class="hover:text-[#333333]" href="/">Dashboard</a>
-          <a class="hover:text-[#333333]" href="/dependencies/list">Dependencies</a>
-          <a class="hover:text-[#333333]" href="/export">Export</a>
-        </nav>
+    .htmx-request.htmx-indicator {
+      display: inline-flex;
+    }
+
+    /* Ripple effect utility */
+    .ripple {
+      position: relative;
+      overflow: hidden;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .ripple:after {
+      content: "";
+      display: block;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+      background-repeat: no-repeat;
+      background-position: 50%;
+      transform: scale(10, 10);
+      opacity: 0;
+      transition: transform .5s, opacity 1s;
+    }
+
+    .ripple:active:after {
+      transform: scale(0, 0);
+      opacity: .3;
+      transition: 0s;
+    }
+  </style>
+</head>
+
+<body class="bg-background text-text-primary min-h-screen flex flex-col font-sans">
+
+  <!-- Top App Bar -->
+  <header class="bg-surface sticky top-0 z-50 shadow-mate-1 border-b border-gray-100">
+    <div class="px-6 h-16 flex items-center justify-between max-w-7xl mx-auto w-full">
+      <div class="flex items-center gap-4">
+        <a href="/" class="flex items-center gap-2 text-primary-600 hover:text-primary-700 transition-colors">
+          <span class="material-symbols-outlined text-3xl">hub</span>
+          <h1 class="text-xl font-bold tracking-tight text-gray-900">J-Dep Analyzer</h1>
+        </a>
       </div>
-    </header>
 
-    <main class="mx-auto px-4 py-6 {{ 'max-w-[80vw]' if wide else 'max-w-6xl' }}">
-      {% block content %}{% endblock %}
-    </main>
-  </body>
+      <nav class="hidden md:flex gap-2 items-center">
+        <a href="/"
+          class="px-4 py-2 rounded-full text-sm font-medium transition-colors 
+                          {% if request.url.path == '/' %}text-primary-600 bg-primary-50{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+          Dashboard
+        </a>
+        <a href="/dependencies/list"
+          class="px-4 py-2 rounded-full text-sm font-medium transition-colors
+                          {% if '/dependencies/list' in request.url.path %}text-primary-600 bg-primary-50{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+          Dependencies
+        </a>
+        <a href="/export"
+          class="px-4 py-2 rounded-full text-sm font-medium transition-colors
+                          {% if '/export' in request.url.path %}text-primary-600 bg-primary-50{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+          Export
+        </a>
+      </nav>
+
+
+    </div>
+    </div>
+  </header>
+
+  <main class="flex-grow w-full mx-auto px-6 py-8 {{ 'max-w-[90vw]' if wide else 'max-w-7xl' }}">
+    {% block content %}{% endblock %}
+  </main>
+
+</body>
+
 </html>

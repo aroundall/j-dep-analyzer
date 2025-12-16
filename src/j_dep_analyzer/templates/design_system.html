@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Design System - J-Dep Analyzer</title>
+
+    <!-- Google Fonts: Inter (UI) & Fira Code (Code) & Roboto (Standard Material) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&family=Roboto:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'Roboto', 'sans-serif'],
+              mono: ['Fira Code', 'monospace'],
+            },
+            colors: {
+              primary: {
+                50: '#eef2ff',
+                100: '#e0e7ff',
+                500: '#6366f1', // Indigo 500
+                600: '#4f46e5', // Indigo 600
+                700: '#4338ca', // Indigo 700
+              },
+              surface: '#ffffff',
+              background: '#f8fafc', // Slate 50
+              text: {
+                primary: '#1e293b', // Slate 800
+                secondary: '#64748b', // Slate 500
+              }
+            },
+            boxShadow: {
+              'mate-1': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+              'mate-2': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+              'mate-3': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+            }
+          }
+        }
+      }
+    </script>
+    <!-- Icons (Material Symbols) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        vertical-align: middle;
+      }
+      /* Simple ripple effect for buttons */
+      .ripple {
+        position: relative;
+        overflow: hidden;
+        transform: translate3d(0, 0, 0);
+      }
+      .ripple:after {
+        content: "";
+        display: block;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+        background-repeat: no-repeat;
+        background-position: 50%;
+        transform: scale(10, 10);
+        opacity: 0;
+        transition: transform .5s, opacity 1s;
+      }
+      .ripple:active:after {
+        transform: scale(0, 0);
+        opacity: .3;
+        transition: 0s;
+      }
+    </style>
+  </head>
+  <body class="bg-background text-text-primary min-h-screen flex flex-col font-sans">
+
+    <!-- Top App Bar -->
+    <header class="bg-surface sticky top-0 z-50 shadow-mate-1 border-b border-gray-100">
+        <div class="px-6 h-16 flex items-center justify-between max-w-7xl mx-auto w-full">
+            <div class="flex items-center gap-4">
+                <button class="p-2 rounded-full hover:bg-gray-100 text-gray-600">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <div class="flex items-center gap-2 text-primary-600">
+                    <span class="material-symbols-outlined text-3xl">hub</span>
+                    <h1 class="text-xl font-bold tracking-tight text-gray-900">J-Dep Analyzer</h1>
+                </div>
+            </div>
+
+            <nav class="hidden md:flex gap-1 items-center">
+                <a href="#" class="px-4 py-2 rounded-full text-sm font-medium text-primary-600 bg-primary-50">Dashboard</a>
+                <a href="#" class="px-4 py-2 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900">Dependencies</a>
+                <a href="#" class="px-4 py-2 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900">Export</a>
+            </nav>
+
+            <div class="flex items-center gap-2">
+                 <button class="p-2 rounded-full hover:bg-gray-100 text-gray-500">
+                    <span class="material-symbols-outlined">search</span>
+                </button>
+                <button class="p-2 rounded-full hover:bg-gray-100 text-gray-500">
+                    <span class="material-symbols-outlined">settings</span>
+                </button>
+                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-primary-700 font-bold text-sm ml-2">
+                    JD
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow w-full max-w-7xl mx-auto px-6 py-8 space-y-12">
+        
+        <!-- Section: Intro -->
+        <div class="bg-indigo-600 rounded-2xl shadow-mate-3 p-8 text-white relative overflow-hidden">
+             <div class="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl"></div>
+             <div class="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-indigo-400 opacity-20 rounded-full blur-2xl"></div>
+             
+             <div class="relative z-10">
+                 <h2 class="text-3xl font-bold mb-2">Design System Preview</h2>
+                 <p class="text-indigo-100 max-w-2xl">
+                     This page demonstrates the new Material UI-inspired design system using Tailwind CSS. 
+                     It features high-contrast colors, depth through shadows, and modern interactive components.
+                 </p>
+             </div>
+        </div>
+
+        <!-- Section: Typography & Colors -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-900 border-l-4 border-primary-500 pl-3">Typography</h3>
+                <div class="bg-surface p-6 rounded-xl shadow-mate-1 border border-gray-100 space-y-4">
+                    <h1 class="text-4xl font-extrabold text-gray-900">Heading 1</h1>
+                    <h2 class="text-3xl font-bold text-gray-900">Heading 2</h2>
+                    <h3 class="text-2xl font-semibold text-gray-900">Heading 3</h3>
+                    <p class="text-base text-gray-600 leading-relaxed">
+                        Body text. Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
+                        Suspendisse varius enim in eros elementum tristique.
+                    </p>
+                    <p class="text-sm text-gray-500">Caption / Metadata text</p>
+                    <code class="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-primary-700">com.google.guava:guava:31.1-jre</code>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-900 border-l-4 border-primary-500 pl-3">Color Palette</h3>
+                <div class="bg-surface p-6 rounded-xl shadow-mate-1 border border-gray-100 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div class="space-y-1">
+                        <div class="h-12 bg-primary-600 rounded-lg shadow-sm"></div>
+                        <div class="text-xs font-semibold">Primary 600</div>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="h-12 bg-primary-500 rounded-lg shadow-sm"></div>
+                        <div class="text-xs font-semibold">Primary 500</div>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="h-12 bg-primary-100 rounded-lg shadow-sm"></div>
+                        <div class="text-xs font-semibold">Primary 100</div>
+                    </div>
+                    <div class="space-y-1">
+                         <div class="h-12 bg-gray-900 rounded-lg shadow-sm"></div>
+                         <div class="text-xs font-semibold">Gray 900</div>
+                    </div>
+                     <div class="space-y-1">
+                         <div class="h-12 bg-gray-500 rounded-lg shadow-sm"></div>
+                         <div class="text-xs font-semibold">Gray 500</div>
+                    </div>
+                    <div class="space-y-1">
+                         <div class="h-12 bg-red-500 rounded-lg shadow-sm"></div>
+                         <div class="text-xs font-semibold">Error</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Components -->
+        <section class="space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900 border-l-4 border-primary-500 pl-3">Components</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Card: Stats -->
+                <div class="bg-surface rounded-xl shadow-mate-1 border border-gray-100 p-6 flex flex-col justify-between hover:shadow-mate-2 transition-shadow duration-300">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="bg-blue-50 p-3 rounded-lg text-blue-600">
+                            <span class="material-symbols-outlined">account_tree</span>
+                        </div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Active
+                        </span>
+                    </div>
+                    <div>
+                        <h4 class="text-2xl font-bold text-gray-900">124</h4>
+                        <p class="text-gray-500 text-sm">Total Dependencies</p>
+                    </div>
+                </div>
+
+                 <!-- Card: Action -->
+                <div class="bg-surface rounded-xl shadow-mate-1 border border-gray-100 p-6 flex flex-col hover:shadow-mate-2 transition-shadow">
+                    <h4 class="text-lg font-semibold mb-2">Upload POMs</h4>
+                    <p class="text-gray-500 text-sm mb-4">Drag and drop your pom.xml files to analyze.</p>
+                    
+                    <button class="ripple mt-auto w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm shadow-primary-500/30 flex items-center justify-center gap-2 transition-all">
+                        <span class="material-symbols-outlined text-sm">upload_file</span>
+                        Select Files
+                    </button>
+                </div>
+
+                <!-- Card: Form Elements -->
+                <div class="bg-surface rounded-xl shadow-mate-1 border border-gray-100 p-6 space-y-4">
+                    <h4 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">Form Controls</h4>
+                    
+                    <!-- Input -->
+                    <div class="relative">
+                        <input type="text" id="floating" class="block w-full px-3 py-2.5 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 peer" placeholder=" " />
+                        <label for="floating" class="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-transparent px-3 peer-focus:px-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-4 left-0 peer-focus:text-primary-600 peer-focus:left-1">
+                            Search Artifact
+                        </label>
+                    </div>
+
+                    <!-- Dropdown using native select styled -->
+                    <div class="relative">
+                         <select class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                            <option>Compile Scope</option>
+                            <option>Test Scope</option>
+                            <option>Provided Scope</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Checkbox -->
+                    <div class="flex items-center">
+                        <input id="link-checkbox" type="checkbox" value="" class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 focus:ring-2">
+                        <label for="link-checkbox" class="ml-2 text-sm font-medium text-gray-900">Ignore Version</label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Data Table -->
+        <section class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900 border-l-4 border-primary-500 pl-3">Data Table (Dependencies)</h3>
+                <div class="flex gap-2">
+                     <button class="text-gray-600 hover:text-primary-600 p-1">
+                         <span class="material-symbols-outlined">filter_list</span>
+                     </button>
+                     <button class="text-gray-600 hover:text-primary-600 p-1">
+                         <span class="material-symbols-outlined">download</span>
+                     </button>
+                </div>
+            </div>
+
+            <div class="bg-surface rounded-xl shadow-mate-1 border border-gray-100 overflow-hidden">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-100">
+                        <tr>
+                            <th scope="col" class="px-6 py-4 font-semibold">Group / Artifact</th>
+                            <th scope="col" class="px-6 py-4 font-semibold">Version</th>
+                            <th scope="col" class="px-6 py-4 font-semibold">Scope</th>
+                            <th scope="col" class="px-6 py-4 font-semibold text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr class="bg-white hover:bg-gray-50 transition-colors cursor-pointer">
+                            <td class="px-6 py-4 font-medium text-gray-900">
+                                <div class="flex flex-col">
+                                    <span class="font-bold">spring-boot-starter-web</span>
+                                    <span class="text-xs text-gray-500 font-mono mt-0.5">org.springframework.boot</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="bg-blue-50 text-blue-700 text-xs font-mono px-2 py-1 rounded border border-blue-100">2.7.5</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                    compile
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="text-gray-400 hover:text-primary-600 transition-colors">
+                                    <span class="material-symbols-outlined text-[20px]">visibility</span>
+                                </button>
+                            </td>
+                        </tr>
+                         <tr class="bg-white hover:bg-gray-50 transition-colors cursor-pointer">
+                            <td class="px-6 py-4 font-medium text-gray-900">
+                                <div class="flex flex-col">
+                                    <span class="font-bold">junit-jupiter</span>
+                                    <span class="text-xs text-gray-500 font-mono mt-0.5">org.junit.jupiter</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="bg-blue-50 text-blue-700 text-xs font-mono px-2 py-1 rounded border border-blue-100">5.8.2</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                                    test
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="text-gray-400 hover:text-primary-600 transition-colors">
+                                    <span class="material-symbols-outlined text-[20px]">visibility</span>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                 <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between text-xs text-gray-500">
+                    <span>Showing 1-2 of 210</span>
+                    <div class="flex gap-1">
+                        <button class="px-3 py-1 rounded bg-white border border-gray-200 hover:border-gray-300 disabled:opacity-50">Prev</button>
+                        <button class="px-3 py-1 rounded bg-primary-600 text-white border border-primary-600 hover:bg-primary-700">Next</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+  </body>
+</html>
