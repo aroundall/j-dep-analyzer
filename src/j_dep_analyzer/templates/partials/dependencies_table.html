@@ -17,11 +17,11 @@
           <div class="flex flex-col">
             <span class="font-bold text-gray-900">{{ row.source_artifact }}</span>
             {% if row.source_group %}
-            <span class="text-xs text-text-secondary font-mono mt-0.5">{{ row.source_group }}</span>
+            <span class="text-xs text-gray-500 font-mono mt-0.5">{{ row.source_group }}</span>
             {% endif %}
             {% if row.source_version %}
             <span
-              class="mt-1 inline-flex w-fit items-center px-2 py-0.5 rounded text-xs font-mono bg-indigo-50 text-indigo-700 border border-indigo-100">
+              class="mt-1 inline-flex w-fit items-center px-2 py-0.5 rounded text-xs font-mono bg-blue-50 text-blue-700 border border-blue-100">
               {{ row.source_version }}
             </span>
             {% endif %}
@@ -33,11 +33,11 @@
           <div class="flex flex-col">
             <span class="font-bold text-gray-900">{{ row.target_artifact }}</span>
             {% if row.target_group %}
-            <span class="text-xs text-text-secondary font-mono mt-0.5">{{ row.target_group }}</span>
+            <span class="text-xs text-gray-500 font-mono mt-0.5">{{ row.target_group }}</span>
             {% endif %}
             {% if row.target_version %}
             <span
-              class="mt-1 inline-flex w-fit items-center px-2 py-0.5 rounded text-xs font-mono bg-indigo-50 text-indigo-700 border border-indigo-100">
+              class="mt-1 inline-flex w-fit items-center px-2 py-0.5 rounded text-xs font-mono bg-blue-50 text-blue-700 border border-blue-100">
               {{ row.target_version }}
             </span>
             {% endif %}
