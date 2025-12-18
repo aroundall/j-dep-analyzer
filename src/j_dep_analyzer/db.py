@@ -5,11 +5,29 @@ Supports both SQLite and PostgreSQL via GCP CloudSQL.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from sqlalchemy.engine import Engine
+from sqlalchemy.pool import QueuePool
 from sqlmodel import SQLModel, create_engine
 
 from j_dep_analyzer.config import DatabaseConfig
+
+
+# Global connector instance to be reused across connections
+_connector: Any = None
+
+
+def _get_connector(credentials: Any = None) -> Any:
+    """Get or create a global CloudSQL Connector instance.
+    
+    Reusing the connector avoids repeated authentication overhead.
+    """
+    global _connector
+    if _connector is None:
+        from google.cloud.sql.connector import Connector
+        _connector = Connector(credentials=credentials)
+    return _connector
 
 
 def create_sqlite_engine(db_path: Path) -> Engine:
@@ -30,6 +48,7 @@ def create_postgresql_engine(config: DatabaseConfig) -> Engine:
 
     Uses the Cloud SQL Python Connector for secure connections.
     Supports GCP service account JSON key authentication.
+    Configured with connection pooling for better performance.
 
     Args:
         config: Database configuration with CloudSQL connection info.
@@ -37,8 +56,6 @@ def create_postgresql_engine(config: DatabaseConfig) -> Engine:
     Returns:
         SQLAlchemy Engine connected to CloudSQL PostgreSQL.
     """
-    from google.cloud.sql.connector import Connector
-
     # Lazy import to avoid requiring GCP dependencies for SQLite usage
     credentials = None
     if config.gcp_credentials_path and config.gcp_credentials_path.exists():
@@ -48,7 +65,7 @@ def create_postgresql_engine(config: DatabaseConfig) -> Engine:
             str(config.gcp_credentials_path)
         )
 
-    connector = Connector(credentials=credentials)
+    connector = _get_connector(credentials)
 
     def getconn():
         return connector.connect(
@@ -60,10 +77,22 @@ def create_postgresql_engine(config: DatabaseConfig) -> Engine:
             enable_iam_auth=True,
         )
 
+    # Configure connection pooling for better performance
+    # - pool_size: number of connections to keep open
+    # - max_overflow: extra connections allowed beyond pool_size
+    # - pool_timeout: seconds to wait for a connection from pool
+    # - pool_recycle: seconds after which to recycle connections
+    # - pool_pre_ping: verify connections are alive before using
     return create_engine(
         "postgresql+pg8000://",
         creator=getconn,
         echo=False,
+        poolclass=QueuePool,
+        pool_size=5,
+        max_overflow=10,
+        pool_timeout=30,
+        pool_recycle=1800,
+        pool_pre_ping=True,
     )
 
 

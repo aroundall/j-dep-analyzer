@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import csv
 import io
-import os
-
-# Force SQLite for tests before importing main
-os.environ["JDEP_DB_TYPE"] = "sqlite"
 
 import main
+
+from fastapi.testclient import TestClient
 
 from fastapi.testclient import TestClient
 
@@ -33,20 +31,21 @@ def test_export_table_csv_artifact_has_header_and_rows(tmp_path) -> None:
 
     from j_dep_analyzer.db_models import Artifact
 
-    gav = f"test:{uuid4().hex}:1"
-    with Session(main._engine()) as session:
-        session.add(Artifact(gav=gav, group_id="test", artifact_id="a", version="1"))
-        session.commit()
+    # Use TestClient as context manager to trigger startup event (init_db)
+    with TestClient(main.app) as client:
+        gav = f"test:{uuid4().hex}:1"
+        with Session(main._engine()) as session:
+            session.add(Artifact(gav=gav, group_id="test", artifact_id="a", version="1"))
+            session.commit()
 
-    client = TestClient(main.app)
-    res = client.get("/export/artifact.csv")
-    assert res.status_code == 200
-    assert res.headers.get("content-type", "").startswith("text/csv")
+        res = client.get("/export/artifact.csv")
+        assert res.status_code == 200
+        assert res.headers.get("content-type", "").startswith("text/csv")
 
-    reader = csv.reader(io.StringIO(res.text))
-    rows = list(reader)
-    assert rows[0] == ["gav", "group_id", "artifact_id", "version"]
-    assert [gav, "test", "a", "1"] in rows
+        reader = csv.reader(io.StringIO(res.text))
+        rows = list(reader)
+        assert rows[0] == ["gav", "group_id", "artifact_id", "version"]
+        assert [gav, "test", "a", "1"] in rows
 
 
 def test_export_table_csv_rejects_invalid_table_name() -> None:
@@ -72,8 +71,9 @@ def test_export_dependencies_csv_not_truncated_by_hidden_limit(tmp_path) -> None
     from j_dep_analyzer.db import create_sqlite_engine, init_db
     from j_dep_analyzer.db_models import Artifact, DependencyEdge
 
-    # Save original config
+    # Save original config and cached engine
     old_config = main.db_config
+    old_cached_engine = main._cached_engine
 
     try:
         # Create test config with temporary database
@@ -82,6 +82,8 @@ def test_export_dependencies_csv_not_truncated_by_hidden_limit(tmp_path) -> None
             db_type="sqlite",
             sqlite_path=test_db_path,
         )
+        # Reset cached engine so _engine() creates a new one with new config
+        main._cached_engine = None
         init_db(create_sqlite_engine(test_db_path))
 
         sink_gav = f"test:sink:{uuid4().hex}"
@@ -113,3 +115,4 @@ def test_export_dependencies_csv_not_truncated_by_hidden_limit(tmp_path) -> None
         assert len(lines) == edge_count + 1
     finally:
         main.db_config = old_config
+        main._cached_engine = old_cached_engine

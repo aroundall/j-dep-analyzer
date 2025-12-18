@@ -12,6 +12,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select as sa_select
+from sqlalchemy.engine import Engine
 from sqlmodel import Session, select
 from sqlmodel import SQLModel
 
@@ -53,18 +54,25 @@ def _startup() -> None:
     # Note: In production, schema is managed by Alembic migrations.
     # init_db is kept for development convenience with SQLite.
     if db_config.db_type == "sqlite":
-        engine = create_engine_from_config(db_config)
+        engine = _engine()
         init_db(engine)
 
 
-def _engine():
-    """Create a SQLModel engine for the configured database.
+# Cached engine singleton to avoid creating new connections on every request.
+# CloudSQL Connector is expensive to create, so we reuse the same engine.
+_cached_engine: Engine | None = None
 
-    Newcomer note:
-        We intentionally create a new engine on demand rather than keeping a global
-        one. For a small demo app this is fine and keeps startup simple.
+
+def _engine() -> Engine:
+    """Get the cached SQLModel engine for the configured database.
+
+    Returns a singleton engine instance to avoid connection overhead,
+    especially important for CloudSQL where connector creation is expensive.
     """
-    return create_engine_from_config(db_config)
+    global _cached_engine
+    if _cached_engine is None:
+        _cached_engine = create_engine_from_config(db_config)
+    return _cached_engine
 
 
 def _load_atomic_graph(session: Session, *, scopes: set[str] | None = None) -> nx.DiGraph:
@@ -566,11 +574,45 @@ async def upload_poms(request: Request, files: list[UploadFile] = File(...)) -> 
                 projects.append(parse_pom(p))
 
             with Session(_engine()) as session:
+                # Collect all GAVs we need to process
+                all_gavs: set[str] = set()
+                all_edges: list[tuple[str, str, str, bool | None]] = []  # (from, to, scope, optional)
+                
                 for proj in projects:
                     a = proj.project
                     a_gav = a.compact()
-
-                    if session.get(Artifact, a_gav) is None:
+                    all_gavs.add(a_gav)
+                    
+                    for dep in proj.dependencies:
+                        b_gav = dep.gav.compact()
+                        all_gavs.add(b_gav)
+                        scope = dep.scope or "compile"
+                        all_edges.append((a_gav, b_gav, scope, dep.optional))
+                
+                # Batch fetch existing artifacts
+                existing_artifacts: set[str] = set()
+                if all_gavs:
+                    existing = session.exec(
+                        select(Artifact.gav).where(Artifact.gav.in_(list(all_gavs)))
+                    ).all()
+                    existing_artifacts = set(existing)
+                
+                # Batch fetch existing edges
+                existing_edges: set[tuple[str, str, str, bool | None]] = set()
+                if all_edges:
+                    # Fetch all edges in one query
+                    edge_results = session.exec(select(DependencyEdge)).all()
+                    existing_edges = {
+                        (e.from_gav, e.to_gav, e.scope or "compile", e.optional)
+                        for e in edge_results
+                    }
+                
+                # Now process with in-memory lookups (no per-item DB queries)
+                for proj in projects:
+                    a = proj.project
+                    a_gav = a.compact()
+                    
+                    if a_gav not in existing_artifacts:
                         session.add(
                             Artifact(
                                 gav=a_gav,
@@ -579,12 +621,13 @@ async def upload_poms(request: Request, files: list[UploadFile] = File(...)) -> 
                                 version=a.version,
                             )
                         )
-
+                        existing_artifacts.add(a_gav)
+                    
                     for dep in proj.dependencies:
                         b = dep.gav
                         b_gav = b.compact()
-
-                        if session.get(Artifact, b_gav) is None:
+                        
+                        if b_gav not in existing_artifacts:
                             session.add(
                                 Artifact(
                                     gav=b_gav,
@@ -593,19 +636,13 @@ async def upload_poms(request: Request, files: list[UploadFile] = File(...)) -> 
                                     version=b.version,
                                 )
                             )
-
+                            existing_artifacts.add(b_gav)
+                        
                         scope = dep.scope or "compile"
                         optional = dep.optional
-
-                        exists = session.exec(
-                            select(DependencyEdge)
-                            .where(DependencyEdge.from_gav == a_gav)
-                            .where(DependencyEdge.to_gav == b_gav)
-                            .where(DependencyEdge.scope == scope)
-                            .where(DependencyEdge.optional == optional)
-                        ).first()
-
-                        if exists is None:
+                        edge_key = (a_gav, b_gav, scope, optional)
+                        
+                        if edge_key not in existing_edges:
                             session.add(
                                 DependencyEdge(
                                     from_gav=a_gav,
@@ -614,10 +651,11 @@ async def upload_poms(request: Request, files: list[UploadFile] = File(...)) -> 
                                     optional=optional,
                                 )
                             )
+                            existing_edges.add(edge_key)
                             ingested_edges += 1
-
+                    
                     ingested_projects += 1
-
+                
                 session.commit()
 
             parsed = len(projects)
