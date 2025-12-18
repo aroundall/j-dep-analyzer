@@ -7,214 +7,210 @@ A web app to upload Maven `pom.xml` files, parse direct dependencies, store them
 - Python >= 3.10
 - Either `uv` (recommended) or `pip`
 
-Notes:
+> **Note**: Python 3.11/3.12 is recommended for best wheel availability.
 
-- Python 3.11/3.12 is recommended for best wheel availability on all platforms.
-- Windows users: this repo uses a `src/` layout, so when starting with `uvicorn` you typically need `--app-dir src` (see below).
+---
 
-## Install (uv)
+## Quick Start
+
+### Linux / macOS
+
+<details>
+<summary><strong>Using uv (recommended)</strong></summary>
 
 ```bash
+# Install
 uv sync --extra dev
-```
 
-## Run (uv)
+# Run (SQLite - default)
+uv run fastapi dev src/main.py
 
-```bash
+# Run (CloudSQL PostgreSQL)
+export JDEP_DB_TYPE=postgresql
+export JDEP_DB_HOST=your-project:region:instance
+export JDEP_DB_NAME=jdep
+export JDEP_DB_USER=your-user
+export JDEP_DB_PASSWORD=your-password
+export JDEP_GCP_CREDENTIALS=/path/to/service-account.json
+uv run alembic upgrade head
 uv run fastapi dev src/main.py
 ```
 
-Then open:
+</details>
 
-- <http://127.0.0.1:8000/>
-
-## Install (pip)
-
-This repo is a Python package (with a `src/` layout), so the simplest `pip` flow is to install it into a virtualenv.
-
-Linux/macOS:
+<details>
+<summary><strong>Using pip</strong></summary>
 
 ```bash
+# Install
 python -m venv .venv
 source .venv/bin/activate
 pip install -U pip
 pip install -e ".[dev]"
+
+# Run (SQLite - default)
+uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
+
+# Run (CloudSQL PostgreSQL)
+export JDEP_DB_TYPE=postgresql
+export JDEP_DB_HOST=your-project:region:instance
+export JDEP_DB_NAME=jdep
+export JDEP_DB_USER=your-user
+export JDEP_DB_PASSWORD=your-password
+export JDEP_GCP_CREDENTIALS=/path/to/service-account.json
+alembic upgrade head
+uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
 ```
 
-Windows (PowerShell):
+</details>
+
+---
+
+### Windows
+
+<details>
+<summary><strong>Using uv (recommended) - PowerShell</strong></summary>
 
 ```powershell
+# Install
+uv sync --extra dev
+
+# Run (SQLite - default)
+uv run fastapi dev src/main.py
+
+# Run (CloudSQL PostgreSQL)
+$env:JDEP_DB_TYPE = "postgresql"
+$env:JDEP_DB_HOST = "your-project:region:instance"
+$env:JDEP_DB_NAME = "jdep"
+$env:JDEP_DB_USER = "your-user"
+$env:JDEP_DB_PASSWORD = "your-password"
+$env:JDEP_GCP_CREDENTIALS = "C:\path\to\service-account.json"
+uv run alembic upgrade head
+uv run fastapi dev src/main.py
+```
+
+</details>
+
+<details>
+<summary><strong>Using pip - PowerShell</strong></summary>
+
+```powershell
+# Install
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -U pip
 pip install -e ".[dev]"
+
+# Run (SQLite - default)
+uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
+
+# Run (CloudSQL PostgreSQL)
+$env:JDEP_DB_TYPE = "postgresql"
+$env:JDEP_DB_HOST = "your-project:region:instance"
+$env:JDEP_DB_NAME = "jdep"
+$env:JDEP_DB_USER = "your-user"
+$env:JDEP_DB_PASSWORD = "your-password"
+$env:JDEP_GCP_CREDENTIALS = "C:\path\to\service-account.json"
+alembic upgrade head
+uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
 ```
 
-Windows (CMD):
+</details>
+
+<details>
+<summary><strong>Using pip - CMD</strong></summary>
 
 ```bat
+:: Install
 py -m venv .venv
 .venv\Scripts\activate.bat
 python -m pip install -U pip
 pip install -e ".[dev]"
+
+:: Run (SQLite - default)
+uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
+
+:: Run (CloudSQL PostgreSQL)
+set JDEP_DB_TYPE=postgresql
+set JDEP_DB_HOST=your-project:region:instance
+set JDEP_DB_NAME=jdep
+set JDEP_DB_USER=your-user
+set JDEP_DB_PASSWORD=your-password
+set JDEP_GCP_CREDENTIALS=C:\path\to\service-account.json
+alembic upgrade head
+uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
 ```
 
-## Run (pip)
+</details>
 
-Because of the `src/` layout, prefer `--app-dir src` so `j_dep_analyzer` imports correctly.
+---
 
-Linux/macOS:
+Then open: <http://127.0.0.1:8000/>
+
+---
+
+## Database Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `JDEP_DB_TYPE` | `sqlite` or `postgresql` | `sqlite` |
+| `JDEP_DB_PATH` | SQLite database file path | `dependencies.db` |
+| `JDEP_DB_HOST` | CloudSQL instance (`project:region:instance`) | - |
+| `JDEP_DB_NAME` | Database name | `jdep` |
+| `JDEP_DB_USER` | Database user | - |
+| `JDEP_DB_PASSWORD` | Database password | - |
+| `JDEP_GCP_CREDENTIALS` | Path to GCP service account JSON | - |
+
+See `.env.example` for a complete template.
+
+---
+
+## Database Migrations (Alembic)
 
 ```bash
-uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
+uv run alembic current              # View status
+uv run alembic upgrade head         # Apply migrations
+uv run alembic downgrade -1         # Rollback one
+uv run alembic revision --autogenerate -m "desc"  # Generate new
 ```
 
-Windows (PowerShell):
-
-```powershell
-uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
-```
-
-Windows (CMD):
-
-```bat
-uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
-```
-
-If you prefer keeping the original module path (`uvicorn src.main:app ...`), you must add `src/` to `PYTHONPATH`:
-
-- PowerShell: `$env:PYTHONPATH = "src"`
-- CMD: `set PYTHONPATH=src`
+---
 
 ## Using the App
 
 ### 1) Upload POM files
 
 - Go to `/` (Dashboard)
-- Use the upload form to upload one or more `pom.xml` (or `*.pom`) files
-- The server parses each file and inserts:
-  - Artifacts (GAV)
-  - Dependency edges (A -> B means "A depends on B")
-
-Notes:
-
-- If a dependency version cannot be resolved (e.g. `${...}` not found), it is stored as `Unknown` (tolerant parsing).
+- Upload one or more `pom.xml` files
+- Server parses and stores artifacts + dependency edges
 
 ### 2) Explore the global graph
 
-On `/` you can toggle:
-
-- **Show Group**: when off, nodes are merged by `artifactId` (and optionally version)
-- **Show Version**: when off, nodes are merged across versions
-- **Direction**:
-  - `forward`: A depends on B (A -> B)
-  - `reverse`: who depends on B (still A -> B, but highlights predecessors of the selected root)
-- **Depth**: limit graph to N hops (or All)
-- **Layout**: `dagre` or `cose`
+Toggle options: **Show Group**, **Show Version**, **Direction**, **Depth**, **Layout**
 
 ### 3) Dependencies pair list
 
 - Go to `/dependencies/list`
-- Filter by `artifactId` (matches source or target)
-- Use checkboxes:
-  - **Ignore Version**: deduplicate pairs across versions
-  - **Ignore GroupId**: deduplicate pairs across groupId
-- Click a row to open the source details view
+- Filter by `artifactId`, use **Ignore Version** / **Ignore GroupId** checkboxes
 
 ### 4) Details view
 
-- `/details/{gav}` (alias of `/visualize/{gav}`)
-- Shows a graph centered at the selected root
-- Supports direction, depth, and aggregation toggles
+- `/details/{gav}` - Graph centered on selected artifact
 
-## Data Storage
-
-The app supports two database backends:
-
-### SQLite (Default for Development)
-
-By default the app uses a SQLite database file in the repo root:
-
-- `dependencies.db`
-
-To change the path:
-
-```bash
-export JDEP_DB_TYPE=sqlite
-export JDEP_DB_PATH=/path/to/your/dependencies.db
-uv run fastapi dev src/main.py
-```
-
-Windows (PowerShell):
-
-```powershell
-$env:JDEP_DB_TYPE = "sqlite"
-$env:JDEP_DB_PATH = "C:\\path\\to\\dependencies.db"
-uv run fastapi dev src/main.py
-```
-
-### GCP CloudSQL (PostgreSQL)
-
-For production, you can use GCP CloudSQL PostgreSQL.
-
-1. **Create a CloudSQL instance** in your GCP project
-2. **Create a service account** with CloudSQL Client role and download the JSON key
-3. **Set environment variables**:
-
-```bash
-export JDEP_DB_TYPE=postgresql
-export JDEP_DB_HOST=your-project:us-central1:your-instance
-export JDEP_DB_NAME=jdep
-export JDEP_DB_USER=your-user
-export JDEP_DB_PASSWORD=your-password
-export JDEP_GCP_CREDENTIALS=/path/to/service-account.json
-```
-
-4. **Run database migrations**:
-
-```bash
-uv run alembic upgrade head
-```
-
-5. **Start the app**:
-
-```bash
-uv run fastapi dev src/main.py
-```
-
-See `.env.example` for a complete list of configuration options.
-
-## Database Migrations
-
-This project uses [Alembic](https://alembic.sqlalchemy.org) for database schema management.
-
-### Common Commands
-
-```bash
-# View current migration status
-uv run alembic current
-
-# Apply all pending migrations
-uv run alembic upgrade head
-
-# Rollback one migration
-uv run alembic downgrade -1
-
-# Generate a new migration (after modifying models)
-uv run alembic revision --autogenerate -m "description"
-```
+---
 
 ## API Endpoints
 
-- `POST /api/upload` – upload POM files (multipart form field: `files`)
-- `GET /api/artifacts` – list artifacts
-- `GET /api/graph/data` – Cytoscape.js elements JSON
-  - Query params: `root_id` (optional), `direction` (`forward|reverse`), `depth` (optional), `show_group` (bool), `show_version` (bool)
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/upload` | Upload POM files (multipart: `files`) |
+| `GET /api/artifacts` | List artifacts |
+| `GET /api/graph/data` | Cytoscape.js graph data |
+
+---
 
 ## Development
 
-Run tests:
-
 ```bash
-uv run pytest
+uv run pytest  # Run tests
 ```

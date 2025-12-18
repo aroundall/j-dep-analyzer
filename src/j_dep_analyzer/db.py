@@ -57,6 +57,7 @@ def create_postgresql_engine(config: DatabaseConfig) -> Engine:
             user=config.user,
             password=config.password or "",
             db=config.database,
+            enable_iam_auth=True,
         )
 
     return create_engine(
