@@ -2,6 +2,11 @@ from __future__ import annotations
 
 import csv
 import io
+import os
+
+# Force SQLite for tests before importing main
+os.environ["JDEP_DB_TYPE"] = "sqlite"
+
 import main
 
 from fastapi.testclient import TestClient
@@ -13,7 +18,7 @@ def test_export_page_lists_tables() -> None:
     assert res.status_code == 200
 
     html = res.text
-    assert "Export (CSV)" in html
+    assert "Database Export" in html
     # SQLModel tables in this app
     assert "artifact" in html
     assert "dependencyedge" in html
@@ -59,16 +64,25 @@ def test_export_table_csv_404_for_unknown_table() -> None:
 def test_export_dependencies_csv_not_truncated_by_hidden_limit(tmp_path) -> None:
     # Regression test: the dependencies export used to silently truncate because
     # the backend limited edges to 2000 inside the row builder.
+    from pathlib import Path
     from sqlmodel import Session
     from uuid import uuid4
 
+    from j_dep_analyzer.config import DatabaseConfig
     from j_dep_analyzer.db import create_sqlite_engine, init_db
     from j_dep_analyzer.db_models import Artifact, DependencyEdge
 
-    old_db_path = main.DB_PATH
+    # Save original config
+    old_config = main.db_config
+
     try:
-        main.DB_PATH = tmp_path / "deps-test.db"
-        init_db(create_sqlite_engine(main.DB_PATH))
+        # Create test config with temporary database
+        test_db_path = tmp_path / "deps-test.db"
+        main.db_config = DatabaseConfig(
+            db_type="sqlite",
+            sqlite_path=test_db_path,
+        )
+        init_db(create_sqlite_engine(test_db_path))
 
         sink_gav = f"test:sink:{uuid4().hex}"
         with Session(main._engine()) as session:
@@ -98,4 +112,4 @@ def test_export_dependencies_csv_not_truncated_by_hidden_limit(tmp_path) -> None
         # Header + one row per inserted edge.
         assert len(lines) == edge_count + 1
     finally:
-        main.DB_PATH = old_db_path
+        main.db_config = old_config

@@ -1,6 +1,6 @@
 # J-Dep Analyzer (Web)
 
-A web app to upload Maven `pom.xml` files, parse direct dependencies, store them in SQLite, and explore them via an interactive graph and list views.
+A web app to upload Maven `pom.xml` files, parse direct dependencies, store them in a database (SQLite or GCP CloudSQL PostgreSQL), and explore them via an interactive graph and list views.
 
 ## Requirements
 
@@ -129,13 +129,18 @@ On `/` you can toggle:
 
 ## Data Storage
 
+The app supports two database backends:
+
+### SQLite (Default for Development)
+
 By default the app uses a SQLite database file in the repo root:
 
 - `dependencies.db`
 
-To change it:
+To change the path:
 
 ```bash
+export JDEP_DB_TYPE=sqlite
 export JDEP_DB_PATH=/path/to/your/dependencies.db
 uv run fastapi dev src/main.py
 ```
@@ -143,15 +148,60 @@ uv run fastapi dev src/main.py
 Windows (PowerShell):
 
 ```powershell
+$env:JDEP_DB_TYPE = "sqlite"
 $env:JDEP_DB_PATH = "C:\\path\\to\\dependencies.db"
 uv run fastapi dev src/main.py
 ```
 
-Windows (CMD):
+### GCP CloudSQL (PostgreSQL)
 
-```bat
-set JDEP_DB_PATH=C:\path\to\dependencies.db
+For production, you can use GCP CloudSQL PostgreSQL.
+
+1. **Create a CloudSQL instance** in your GCP project
+2. **Create a service account** with CloudSQL Client role and download the JSON key
+3. **Set environment variables**:
+
+```bash
+export JDEP_DB_TYPE=postgresql
+export JDEP_DB_HOST=your-project:us-central1:your-instance
+export JDEP_DB_NAME=jdep
+export JDEP_DB_USER=your-user
+export JDEP_DB_PASSWORD=your-password
+export JDEP_GCP_CREDENTIALS=/path/to/service-account.json
+```
+
+4. **Run database migrations**:
+
+```bash
+uv run alembic upgrade head
+```
+
+5. **Start the app**:
+
+```bash
 uv run fastapi dev src/main.py
+```
+
+See `.env.example` for a complete list of configuration options.
+
+## Database Migrations
+
+This project uses [Alembic](https://alembic.sqlalchemy.org) for database schema management.
+
+### Common Commands
+
+```bash
+# View current migration status
+uv run alembic current
+
+# Apply all pending migrations
+uv run alembic upgrade head
+
+# Rollback one migration
+uv run alembic downgrade -1
+
+# Generate a new migration (after modifying models)
+uv run alembic revision --autogenerate -m "description"
 ```
 
 ## API Endpoints

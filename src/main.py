@@ -15,7 +15,8 @@ from sqlalchemy import select as sa_select
 from sqlmodel import Session, select
 from sqlmodel import SQLModel
 
-from j_dep_analyzer.db import create_sqlite_engine, init_db
+from j_dep_analyzer.config import DatabaseConfig
+from j_dep_analyzer.db import create_engine_from_config, init_db
 from j_dep_analyzer.db_models import Artifact, DependencyEdge
 from j_dep_analyzer.graph import (
     aggregate_graph,
@@ -30,7 +31,15 @@ PKG_DIR = BASE_DIR / "j_dep_analyzer"
 TEMPLATES_DIR = PKG_DIR / "templates"
 STATIC_DIR = PKG_DIR / "static"
 
-DB_PATH = Path(os.getenv("JDEP_DB_PATH", "dependencies.db")).resolve()
+# Database configuration from environment
+db_config = DatabaseConfig.from_env()
+
+# For display purposes in templates
+DB_PATH = (
+    str(db_config.sqlite_path)
+    if db_config.db_type == "sqlite"
+    else f"CloudSQL: {db_config.host}/{db_config.database}"
+)
 
 app = FastAPI(title="J-Dep Analyzer")
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -41,18 +50,21 @@ if STATIC_DIR.exists():
 
 @app.on_event("startup")
 def _startup() -> None:
-    engine = create_sqlite_engine(DB_PATH)
-    init_db(engine)
+    # Note: In production, schema is managed by Alembic migrations.
+    # init_db is kept for development convenience with SQLite.
+    if db_config.db_type == "sqlite":
+        engine = create_engine_from_config(db_config)
+        init_db(engine)
 
 
 def _engine():
-    """Create a SQLModel engine for the configured SQLite DB.
+    """Create a SQLModel engine for the configured database.
 
     Newcomer note:
         We intentionally create a new engine on demand rather than keeping a global
         one. For a small demo app this is fine and keeps startup simple.
     """
-    return create_sqlite_engine(DB_PATH)
+    return create_engine_from_config(db_config)
 
 
 def _load_atomic_graph(session: Session, *, scopes: set[str] | None = None) -> nx.DiGraph:

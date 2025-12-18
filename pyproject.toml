@@ -1,7 +1,7 @@
 [project]
 name = "j-dep-analyzer"
 version = "0.1.0"
-description = "Web app to upload Maven pom.xml files, parse dependencies, store them in SQLite, and visualize them via an interactive UI."
+description = "Web app to upload Maven pom.xml files, parse dependencies, store them in SQLite or GCP CloudSQL PostgreSQL, and visualize them via an interactive UI."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -12,6 +12,12 @@ dependencies = [
   "fastapi[standard]>=0.110.0",
   "python-multipart>=0.0.9",
   "jinja2>=3.1.0",
+  # PostgreSQL / CloudSQL support
+  "pg8000>=1.30.0",
+  "cloud-sql-python-connector[pg8000]>=1.0.0",
+  "google-auth>=2.0.0",
+  # Database migrations
+  "alembic>=1.13.0",
 ]
 
 [build-system]
