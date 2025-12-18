@@ -773,3 +773,30 @@ def api_graph_data(
             "edge_count": g.number_of_edges(),
         },
     }
+
+
+if __name__ == "__main__":
+    import sys
+    import uvicorn
+
+    # Check if "dev" argument is passed
+    dev_mode = "dev" in sys.argv
+
+    if dev_mode:
+        # Development mode: hot reload enabled, localhost only
+        print("🔧 Starting in DEVELOPMENT mode (hot reload enabled)")
+        uvicorn.run(
+            "main:app",
+            host="127.0.0.1",
+            port=8000,
+            reload=True,
+            reload_dirs=["src"],
+        )
+    else:
+        # Production mode: no reload, bind to all interfaces
+        print("🚀 Starting in PRODUCTION mode")
+        uvicorn.run(
+            app,
+            host="0.0.0.0",
+            port=8000,
+        )

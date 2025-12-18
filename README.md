@@ -22,10 +22,13 @@ A web app to upload Maven `pom.xml` files, parse direct dependencies, store them
 # Install
 uv sync --extra dev
 
-# Run (SQLite - default)
-uv run fastapi dev src/main.py
+# Run in development mode (SQLite - default)
+uv run python src/main.py dev
 
-# Run (CloudSQL PostgreSQL)
+# Run in production mode
+uv run python src/main.py
+
+# Run with CloudSQL PostgreSQL
 export JDEP_DB_TYPE=postgresql
 export JDEP_DB_HOST=your-project:region:instance
 export JDEP_DB_NAME=jdep
@@ -33,7 +36,7 @@ export JDEP_DB_USER=your-user
 export JDEP_DB_PASSWORD=your-password
 export JDEP_GCP_CREDENTIALS=/path/to/service-account.json
 uv run alembic upgrade head
-uv run fastapi dev src/main.py
+uv run python src/main.py
 ```
 
 </details>
@@ -48,10 +51,13 @@ source .venv/bin/activate
 pip install -U pip
 pip install -e ".[dev]"
 
-# Run (SQLite - default)
-uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
+# Run in development mode (SQLite - default)
+python src/main.py dev
 
-# Run (CloudSQL PostgreSQL)
+# Run in production mode
+python src/main.py
+
+# Run with CloudSQL PostgreSQL
 export JDEP_DB_TYPE=postgresql
 export JDEP_DB_HOST=your-project:region:instance
 export JDEP_DB_NAME=jdep
@@ -59,7 +65,7 @@ export JDEP_DB_USER=your-user
 export JDEP_DB_PASSWORD=your-password
 export JDEP_GCP_CREDENTIALS=/path/to/service-account.json
 alembic upgrade head
-uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
+python src/main.py
 ```
 
 </details>
@@ -75,10 +81,13 @@ uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
 # Install
 uv sync --extra dev
 
-# Run (SQLite - default)
-uv run fastapi dev src/main.py
+# Run in development mode (SQLite - default)
+uv run python src/main.py dev
 
-# Run (CloudSQL PostgreSQL)
+# Run in production mode
+uv run python src/main.py
+
+# Run with CloudSQL PostgreSQL
 $env:JDEP_DB_TYPE = "postgresql"
 $env:JDEP_DB_HOST = "your-project:region:instance"
 $env:JDEP_DB_NAME = "jdep"
@@ -86,7 +95,7 @@ $env:JDEP_DB_USER = "your-user"
 $env:JDEP_DB_PASSWORD = "your-password"
 $env:JDEP_GCP_CREDENTIALS = "C:\path\to\service-account.json"
 uv run alembic upgrade head
-uv run fastapi dev src/main.py
+uv run python src/main.py
 ```
 
 </details>
@@ -101,10 +110,13 @@ py -m venv .venv
 python -m pip install -U pip
 pip install -e ".[dev]"
 
-# Run (SQLite - default)
-uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
+# Run in development mode (SQLite - default)
+python src/main.py dev
 
-# Run (CloudSQL PostgreSQL)
+# Run in production mode
+python src/main.py
+
+# Run with CloudSQL PostgreSQL
 $env:JDEP_DB_TYPE = "postgresql"
 $env:JDEP_DB_HOST = "your-project:region:instance"
 $env:JDEP_DB_NAME = "jdep"
@@ -112,7 +124,7 @@ $env:JDEP_DB_USER = "your-user"
 $env:JDEP_DB_PASSWORD = "your-password"
 $env:JDEP_GCP_CREDENTIALS = "C:\path\to\service-account.json"
 alembic upgrade head
-uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
+python src/main.py
 ```
 
 </details>
@@ -127,10 +139,13 @@ py -m venv .venv
 python -m pip install -U pip
 pip install -e ".[dev]"
 
-:: Run (SQLite - default)
-uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
+:: Run in development mode (SQLite - default)
+python src/main.py dev
 
-:: Run (CloudSQL PostgreSQL)
+:: Run in production mode
+python src/main.py
+
+:: Run with CloudSQL PostgreSQL
 set JDEP_DB_TYPE=postgresql
 set JDEP_DB_HOST=your-project:region:instance
 set JDEP_DB_NAME=jdep
@@ -138,7 +153,7 @@ set JDEP_DB_USER=your-user
 set JDEP_DB_PASSWORD=your-password
 set JDEP_GCP_CREDENTIALS=C:\path\to\service-account.json
 alembic upgrade head
-uvicorn main:app --reload --app-dir src --host 127.0.0.1 --port 8000
+python src/main.py
 ```
 
 </details>
