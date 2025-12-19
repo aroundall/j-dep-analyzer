@@ -11,7 +11,9 @@
 - **核心逻辑**：
   - **`lxml`**: 解析 XML。
   - **`NetworkX`**: 构建图结构、合并节点、计算依赖路径。
-  - **`SQLModel`**: 数据库 ORM (SQLite)。
+  - **`SQLModel`**: 数据库 ORM。
+    - **Local**: SQLite (`sqlite:///dependencies.db`).
+    - **GCP**: Cloud SQL PostgreSQL via `cloud-sql-python-connector` + `pg8000` (IAM Auth).
 - **前端技术**：
   - **HTMX**: 用于处理无刷新的文件上传、表格搜索和视图切换。
   - **Cytoscape.js**: **强制使用**此库在前端渲染交互式依赖图（支持节点合并、布局切换）。
@@ -39,35 +41,47 @@
 - 启动命令：`uv run fastapi dev src/main.py`
 - 依赖添加：`uv add fastapi uvicorn python-multipart jinja2 sqlmodel networkx lxml`
 
-## 6. [UI/UX Design System] - VS Code "Quiet Light" Theme
+## 6. [UI/UX Design System] - Modern Material (Indigo/Slate)
 
-**核心原则**：所有生成的 HTML/CSS 必须模仿 VS Code 的 "Quiet Light" 主题风格。
+**核心原则**：现代、简洁、Material UI 风格 (Inspired)，使用 Tailwind CSS 构建。强调高对比度、阴影带来的层级感以及圆角设计。
 
 ### 6.1. 配色方案 (Color Palette)
-使用 Tailwind CSS 类来实现以下视觉效果：
+使用 `tailwind.config` 中定义的扩展颜色：
+- **Primary Brand**: Indigo (`#6366f1` / `primary-500` to `#4f46e5` / `primary-600`).
 - **背景 (Backgrounds)**:
-  - App Background: `#F3F3F3` (接近 VS Code 的 side bar 颜色).
-  - Content/Panel Background: `#FFFFFF` (纯白卡片).
-  - Hover Background: `#E8E8E8` (列表项悬停).
+  - App Background: `#f8fafc` (Slate 50).
+  - Surface/Card: `#ffffff` (White).
+  - Hover/Highlight: `gray-50` or `indigo-50`.
 - **文字 (Typography Colors)**:
-  - Primary Text: `#333333` (深灰，不要纯黑).
-  - Secondary/Meta Text: `#767676` (用于 Label 或不重要的信息).
-- **边框 (Borders)**: `#E5E5E5` (非常淡的分割线).
-- **强调色 (Accents)**:
-  - Primary Action (Button/Link): `#0090F1` (VS Code Blue).
-  - Success/Valid: `#098658` (VS Code Green).
-  - Keyword/Tag: `#800080` (VS Code Purple).
+  - Primary Text: `#1e293b` (Slate 800).
+  - Secondary Text: `#64748b` (Slate 500).
+- **功能色 (Functional)**:
+  - Success: Green (e.g., compile scope).
+  - Test: Purple (e.g., test scope).
+  - Error: Red.
 
 ### 6.2. 字体策略 (Typography)
-- **通用字体 (Body)**: 使用系统级无衬线字体栈，优先保证清晰度。
-  - `font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;`
-  - 如果可能，通过 CDN 引入 **Inter** 字体 (Google Fonts)。
-- **代码/GAV字体 (Monospace)**:
-  - 显示 GroupId, ArtifactId, Version 等数据时，**必须**使用等宽字体。
-  - `font-family: "Fira Code", "Consolas", "Monaco", monospace;`
-  - 稍微减小字号 (e.g., `text-sm`) 以便在表格中显示更多内容。
+- **UI 字体 (Sans)**: `Inter`, `Roboto`, `sans-serif`. 优先使用 **Inter**。
+- **代码字体 (Mono)**: `Fira Code`, `monospace`. 用于展示 GroupId, ArtifactId, Version 等。
 
 ### 6.3. 组件风格 (Component Styles)
-- **卡片 (Cards)**: 白色背景，无阴影或极浅的阴影 (`shadow-sm`)，1px 的实线边框 (`border-gray-200`)。
-- **按钮 (Buttons)**: 扁平化，直角或极小的圆角 (`rounded-sm`)，模仿 VS Code 的原生控件。
-- **表格 (Tables)**: 紧凑型 (`table-compact`)，行高较小，便于阅读大量数据。
+- **阴影 (Shadows)**: 使用自定义的 `shadow-mate-1`, `shadow-mate-2` 等，营造悬浮感。
+- **圆角 (Radius)**: 
+  - 卡片/容器: `rounded-xl` (较大圆角).
+  - 按钮/Badge: `rounded-full` or `rounded-lg`.
+- **图标 (Icons)**: Google **Material Symbols Outlined** (Sharp & Clean).
+- **交互 (Interactions)**: 按钮支持 Ripple 效果 (可选)，卡片和行项支持 Hover 提升效果 (`hover:shadow-mate-2`).
+- **布局 (Layout)**: 顶部导航栏 (Sticky Header) + 居中响应式主体内容 (`max-w-7xl mx-auto`).
+
+## 7. Cloud Infrastructure & Database (GCP)
+- **数据库连接原则**：
+  - **禁止** 在生产环境使用直接的 TCP/IP 连接字符串 (e.g., `postgresql://user:pass@IP:5432/...`)。
+  - **必须** 使用 `cloud-sql-python-connector` 创建连接池。
+  - **驱动**：指定使用 `pg8000` (纯 Python, 兼容性好)。
+  - **认证**：优先开启 `enable_iam_auth=True`，避免在代码或配置中硬编码数据库密码。
+- **环境配置 (Environment Variables)**：
+  - `JDEP_DB_TYPE`: `sqlite` (默认) 或 `postgresql`.
+  - `JDEP_DB_HOST`: CloudSQL Instance Connection Name (e.g., `project:region:instance`).
+  - `JDEP_DB_USER`: IAM Service Account User (e.g., `sa-name@project.iam`).
+  - `JDEP_GCP_CREDENTIALS`: (Optional) 本地开发时指向 Service Account JSON Key 的路径。
+  - **注意**：应用启动时需根据 `JDEP_DB_TYPE` 自动切换 `create_engine` 逻辑。
